@@ -14,9 +14,10 @@ func main() {
 
 	user := model.User{
 		"Mitchell",
-		"Password",
+		"password",
 	}
 
 	err := user.Create()
 	fmt.Println(err)
+	fmt.Println(user.ValidLogin())
 }

@@ -2,11 +2,9 @@ package model
 
 import (
 	"errors"
-	"fmt"
 	"strconv"
 
 	"../db"
-	"../utils"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -16,42 +14,40 @@ type User struct {
 }
 
 func (u *User) Create() error {
-	fmt.Println(u.GetUserID())
-	if u.Exists() == true {
-		u.hashPassword()
-		new_id := db.Client.Incr(USER_KEY_STORE)
-		_ = db.Client.Set(USER_NAME+u.Username, new_id.Val(), 0)
-		_ = db.Client.HMSet(USER+strconv.FormatInt(new_id.Val(), 10), utils.StructToMap(u))
+	if u.Exists() != true {
+		new_id, _ := db.Client.Incr(USER_KEY_STORE).Result()
+
+		db.Client.Set(USER_NAME+u.Username, new_id, 0)
+		db.Client.HMSet(USER+strconv.FormatInt(new_id, 10), map[string]string{
+			"username": u.Username,
+			"password": GenerateHash(u.Password),
+		})
 		return nil
 	}
-
 	return errors.New("username already exists")
 }
 
-/*
-func (u *User) CheckLogin() error {
+func (u *User) ValidLogin() bool {
 	if u.Exists() == true {
-
+		id := u.GetUserID()
+		result, _ := db.Client.HGet(USER+id, "password").Result()
+		if bcrypt.CompareHashAndPassword([]byte(result), []byte(u.Password)) == nil {
+			return true
+		}
 	}
-	return errors.New("Username does not exists")
+	return false
 }
-*/
 
 func (u *User) Exists() bool {
-	return db.Client.Get(USER_NAME+u.Username).Err() != nil
+	return db.Client.Get(USER_NAME+u.Username).Err() == nil
 }
 
 func (u *User) GetUserID() string {
-	return db.Client.Get(USER_NAME + u.Username).Val()
+	id, _ := db.Client.Get(USER_NAME + u.Username).Result()
+	return id
 }
 
-/*
-func (u *User) GetUserID() *redis.StringCmd {
-	return db.Client.Get(USER_NAME + u.Username)
-}
-*/
-
-func (u *User) hashPassword() {
-	hash, _ := bcrypt.GenerateFromPassword([]byte(u.Password), 0)
-	u.Password = string(hash)
+func GenerateHash(password string) string {
+	hash, _ := bcrypt.GenerateFromPassword([]byte(password), 0)
+	return string(hash)
 }
