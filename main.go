@@ -1,19 +1,22 @@
 package main
 
-import(
-    "./db"
-    "./model"
-    "fmt"
+import (
+	"fmt"
+
+	"./config"
+	"./db"
+	"./model"
 )
 
-func main(){
-    db.Configure()
-    
-    user := model.User{
-        "Mitchell",
-        "Password",
-    }
-    
-    err := user.CreateUser()
-    fmt.Println(err)
+func main() {
+	config := config.ReadConfig()
+	db.Configure(config)
+
+	user := model.User{
+		"Mitchell",
+		"Password",
+	}
+
+	err := user.Create()
+	fmt.Println(err)
 }
