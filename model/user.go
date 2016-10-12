@@ -1,53 +1,30 @@
 package model
 
 import (
-	"errors"
-	"strconv"
-
-	"../db"
-	"golang.org/x/crypto/bcrypt"
+    "strconv"    
 )
 
-type User struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+//schema
+const (
+    u_keys = "u_keys" //increments on each new user
+    
+    u_hash = "u_hash:" //hash map for users = id maps to key values
+    u_groups = "u_groups:" //sorted set for groups that user is in
+    u_name = "u_name:" //username maps to user id
+)
+
+func USER_GROUPS(s string) string{
+    return u_groups + s    
 }
 
-func (u *User) Create() error {
-	if u.Exists() != true {
-		new_id, _ := db.Client.Incr(USER_KEY_STORE).Result()
-
-		db.Client.Set(USER_NAME+u.Username, new_id, 0)
-		db.Client.HMSet(USER+strconv.FormatInt(new_id, 10), map[string]string{
-			"username": u.Username,
-			"password": GenerateHash(u.Password),
-		})
-		return nil
-	}
-	return errors.New("username already exists")
+func USER_NAME(s string) string{
+    return u_name + s;
 }
 
-func (u *User) ValidLogin() bool {
-	if u.Exists() == true {
-		id := u.GetUserID()
-		result, _ := db.Client.HGet(USER+id, "password").Result()
-		if bcrypt.CompareHashAndPassword([]byte(result), []byte(u.Password)) == nil {
-			return true
-		}
-	}
-	return false
+func USER_HASH(i int) string{
+    return u_hash + strconv.Itoa(i);
 }
 
-func (u *User) Exists() bool {
-	return db.Client.Get(USER_NAME+u.Username).Err() == nil
-}
-
-func (u *User) GetUserID() string {
-	id, _ := db.Client.Get(USER_NAME + u.Username).Result()
-	return id
-}
-
-func GenerateHash(password string) string {
-	hash, _ := bcrypt.GenerateFromPassword([]byte(password), 0)
-	return string(hash)
+func USER_KEY_STORE() string{
+    return u_keys
 }

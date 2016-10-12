@@ -5,14 +5,14 @@ import (
 
 	"./config"
 	"./db"
-	"./model"
+	"./operations"
 )
 
 func main() {
 	config := config.ReadConfig()
 	db.Configure(config)
 
-	user := model.User{
+	user := operations.User{
 		"Mitchell",
 		"password",
 	}
