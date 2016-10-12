@@ -6,18 +6,16 @@ import (
 	"./config"
 	"./db"
 	"./operations"
+	"./routes"
 )
 
 func main() {
 	config := config.ReadConfig()
 	db.Configure(config)
 
-	user := operations.User{
-		"Mitchell",
-		"password",
-	}
-
-	err := user.Create()
+	err := operations.Create("mitchell", "gerber")
 	fmt.Println(err)
-	fmt.Println(user.ValidLogin())
+	fmt.Println(operations.ValidLogin("mitchell", "gerber"))
+
+	routes.Routes().Listen(":8080")
 }

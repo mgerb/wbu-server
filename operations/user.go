@@ -3,7 +3,7 @@ package operations
 import (
 	"errors"
 	"strconv"
-	
+
 	"../db"
 	"../model"
 	"golang.org/x/crypto/bcrypt"
@@ -16,14 +16,14 @@ type User struct {
 }
 
 //store username/password in hash
-func (u *User) Create() error {
-	if u.Exists() != true {
+func Create(username string, password string) error {
+	if Exists(username) != true {
 		new_id, _ := db.Client.Incr(model.USER_KEY_STORE()).Result()
 
-		db.Client.Set(model.USER_NAME(u.Username), new_id, 0)
+		db.Client.Set(model.USER_NAME(username), new_id, 0)
 		db.Client.HMSet(model.USER_HASH(int(new_id)), map[string]string{
-			"username": u.Username,
-			"password": GenerateHash(u.Password),
+			"username": username,
+			"password": GenerateHash(password),
 		})
 		return nil
 	}
@@ -31,23 +31,23 @@ func (u *User) Create() error {
 }
 
 //check if password and username are correct
-func (u *User) ValidLogin() bool {
-	if u.Exists() == true {
-		id := u.GetUserID()
+func ValidLogin(username string, password string) bool {
+	if Exists(username) == true {
+		id := GetUserID(username)
 		result, _ := db.Client.HGet(model.USER_HASH(id), "password").Result()
-		if bcrypt.CompareHashAndPassword([]byte(result), []byte(u.Password)) == nil {
+		if bcrypt.CompareHashAndPassword([]byte(result), []byte(password)) == nil {
 			return true
 		}
 	}
 	return false
 }
 
-func (u *User) Exists() bool {
-	return db.Client.Get(model.USER_NAME(u.Username)).Err() == nil
+func Exists(username string) bool {
+	return db.Client.Get(model.USER_NAME(username)).Err() == nil
 }
 
-func (u *User) GetUserID() int {
-	result, _ := db.Client.Get(model.USER_NAME(u.Username)).Result()
+func GetUserID(username string) int {
+	result, _ := db.Client.Get(model.USER_NAME(username)).Result()
 	i, _ := strconv.Atoi(result)
 	return i
 }
