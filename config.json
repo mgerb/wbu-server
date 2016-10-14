@@ -1,6 +1,0 @@
-{
-    "ServerPort": "8080",
-    "DatabaseAddress": "45.55.230.86:6279",
-    "DatabasePassword": "thereisnospoon",
-    "TokenSecret": "secret"
-}
