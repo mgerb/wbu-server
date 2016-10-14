@@ -6,11 +6,11 @@ import (
 
 //schema
 const (
-    u_keys = "u_keys" //increments on each new user
+    u = "u:" //username maps to user id
     
+    u_keys = "u_keys" //increments on each new user
     u_hash = "u_hash:" //hash map for users = id maps to key values
     u_groups = "u_groups:" //sorted set for groups that user is in
-    u_name = "u_name:" //username maps to user id
 )
 
 func USER_GROUPS(s string) string{
@@ -18,7 +18,7 @@ func USER_GROUPS(s string) string{
 }
 
 func USER_NAME(s string) string{
-    return u_name + s;
+    return u + s;
 }
 
 func USER_HASH(i int) string{
