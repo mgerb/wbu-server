@@ -7,13 +7,16 @@ import (
 	"os"
 )
 
-type Config struct {
+var Config configStruct
+
+type configStruct struct {
 	ServerPort       string `json:"ServerPort"`
 	DatabaseAddress  string `json:"DatabaseAddress"`
 	DatabasePassword string `json:"DatabasePassword"`
+	TokenSecret      string `json:"TokenSecret"`
 }
 
-func ReadConfig() Config {
+func ReadConfig() {
 
 	log.Println("Reading config file...")
 
@@ -26,13 +29,10 @@ func ReadConfig() Config {
 
 	log.Printf("%s\n", string(file))
 
-	var result Config
-
-	err := json.Unmarshal(file, &result)
+	err := json.Unmarshal(file, &Config)
 
 	if err != nil {
 		log.Println(err)
 	}
 
-	return result
 }

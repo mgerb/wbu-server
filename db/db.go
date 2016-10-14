@@ -3,16 +3,15 @@ package db
 import (
 	"fmt"
 
-	"../config"
 	"gopkg.in/redis.v4"
 )
 
 var Client *redis.Client
 
-func Configure(c config.Config) {
+func Configure(address string, password string) {
 	options := &redis.Options{
-		Addr:     c.DatabaseAddress,
-		Password: c.DatabasePassword,
+		Addr:     address,
+		Password: password,
 		DB:       0,
 	}
 

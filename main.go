@@ -7,8 +7,8 @@ import (
 )
 
 func main() {
-	config := config.ReadConfig()
-	db.Configure(config)
+	config.ReadConfig()
+	db.Configure(config.Config.DatabaseAddress, config.Config.DatabasePassword)
 
-	routes.Routes().Listen(":" + config.ServerPort)
+	routes.Routes().Listen(":" + config.Config.ServerPort)
 }

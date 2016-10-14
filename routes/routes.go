@@ -1,18 +1,18 @@
 package routes
 
 import (
-	"github.com/kataras/iris"
 	"./middleware"
+	"./userRoutes"
+	"github.com/kataras/iris"
 )
 
 func Routes() *iris.Framework {
 	app := iris.New()
-	
-	//app.Use(&middleware.MyMiddleware{})
-	//app.Use(logger.New())	
+
 	middleware.ApplyMiddleware(app)
-	
-	app.Get("/test", HandleUser)
-	
+
+	app.Get("/test", userRoutes.HandleTest)
+	app.Post("/login", userRoutes.Login)
+
 	return app
 }
