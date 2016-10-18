@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"fmt"
+	"log"
 
 	"../../config"
 	jwt "github.com/dgrijalva/jwt-go"
@@ -9,45 +9,40 @@ import (
 	"github.com/kataras/iris"
 )
 
+//ApplyMiddleware - applies middleware to iris framework
 func ApplyMiddleware(ctx *iris.Framework) {
-	//ctx.UseFunc(test)
-	//ctx.UseFunc(login)
 	ctx.Use(logger.New())
 	ctx.UseFunc(checkJWT)
 }
 
-func test(ctx *iris.Context) {
-	fmt.Println(ctx.PathString())
-	ctx.Next()
-}
-
-func login(ctx *iris.Context) {
-	/*
-	   if ctx.PathString() == "/login"{
-	       ctx.Write("you are not logged in")
-	   } else {
-	       ctx.Next()
-	   }
-	*/
-	ctx.Next()
-}
-
 func checkJWT(ctx *iris.Context) {
-	authToken := ctx.RequestHeader("Authorization")
+	path := ctx.PathString()
 
-	token, err := jwt.Parse(authToken, func(token *jwt.Token) (interface{}, error) {
-		return []byte(config.Config.TokenSecret), nil
-	})
-
-	if err != nil {
-		ctx.Write(err.Error())
+	if path == "/login" || path == "/createuser" {
+		ctx.Next()
 	} else {
-		if claims, ok := token.Claims.(jwt.MapClaims); token.Valid && ok {
-			fmt.Println(claims["username"], claims["id"])
-			ctx.Next()
+		//get Authorization header - jwt token
+		authToken := ctx.RequestHeader("Authorization")
+
+		//parse the token
+		token, err := jwt.Parse(authToken, func(token *jwt.Token) (interface{}, error) {
+			return []byte(config.Config.TokenSecret), nil
+		})
+
+		//check if actual token
+		if err != nil {
+			log.Println(err.Error())
+			ctx.JSON(500, `{"message": "Invalid Token"}`)
 		} else {
-			ctx.Write(err.Error())
+			//get the claims from token - username and id
+			if claims, ok := token.Claims.(jwt.MapClaims); token.Valid && ok {
+				ctx.Set("username", claims["username"].(string))
+				ctx.Set("id", claims["id"].(string))
+				ctx.Next()
+			} else {
+				log.Println(err.Error())
+				ctx.JSON(500, `{"message": "Invalid Authentication"}`)
+			}
 		}
 	}
-
 }
