@@ -15,7 +15,7 @@ func CreateGroup(groupname string, userID string) error {
 		temp, _ := db.Client.Incr(groupModel.GROUP_KEY_STORE()).Result()
 		newID := strconv.FormatInt(temp, 10)
 
-		db.Client.Set(groupModel.GROUP_NAME(groupname), newID, 0)
+		db.Client.Set(groupModel.GROUP_ID(groupname), newID, 0)
 		db.Client.HMSet(groupModel.GROUP_HASH(newID), map[string]string{
 			"groupname": groupname,
 			"owner":     userID,
@@ -31,7 +31,7 @@ func CreateGroup(groupname string, userID string) error {
 
 //Exists - check if group exists in redis - return boolean
 func Exists(groupname string) bool {
-	return db.Client.Get(groupModel.GROUP_NAME(groupname)).Err() == nil
+	return db.Client.Get(groupModel.GROUP_ID(groupname)).Err() == nil
 }
 
 //TODO-----------------------------------------------------------------

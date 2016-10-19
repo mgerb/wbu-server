@@ -1,0 +1,39 @@
+group(
+
+    -key pair
+    grKeys => int                       //store for group id's
+    
+    -key pair
+    grID:<groupName> => int             //takes in group name and returns group id
+    
+    -hash
+    grHash:<groupID> => {               //group object that contains various information.. tbd
+        groupname: string
+        owner: userID
+        maxmembers: int
+    }
+    
+    -set
+    grMem:<groupID> => [...userID]      //array of userID's
+    
+    -set
+    grInv:<groupID> => [...userID]      //array of userID's
+    
+    -sorted set
+    grMsg:<groupID> => [<userID>:<time>:<message>]
+    
+)
+
+user(
+    
+    uKeys => int                      //store for user id's
+    
+    uID:<username> => int             //takes in username and returns userID
+    
+    uHash:<userID> => {               //user object
+        username: string
+        password: hashed(password)
+    }
+    
+    uGroups:<userID> => [...groupID]  //returns array of groupID's
+)

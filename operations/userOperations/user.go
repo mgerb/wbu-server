@@ -14,7 +14,7 @@ func CreateUser(username string, password string) error {
 	if Exists(username) != true {
 		temp, _ := db.Client.Incr(userModel.USER_KEY_STORE()).Result()
 		newID := strconv.FormatInt(temp, 10)
-		db.Client.Set(userModel.USER_NAME(username), newID, 0)
+		db.Client.Set(userModel.USER_ID(username), newID, 0)
 		db.Client.HMSet(userModel.USER_HASH(newID), map[string]string{
 			"username": username,
 			"password": generateHash(password),
@@ -38,12 +38,12 @@ func ValidLogin(username string, password string) bool {
 
 //Exists - return if user exists in redis
 func Exists(username string) bool {
-	return db.Client.Get(userModel.USER_NAME(username)).Err() == nil
+	return db.Client.Get(userModel.USER_ID(username)).Err() == nil
 }
 
 //GetUserID = return user id as string
 func GetUserID(username string) string {
-	result, _ := db.Client.Get(userModel.USER_NAME(username)).Result()
+	result, _ := db.Client.Get(userModel.USER_ID(username)).Result()
 	return result
 }
 
