@@ -23,6 +23,9 @@ group(
     -list of messages 
     grMsg:<groupID> => [<userID>:<time>:<message>]
     
+    -geoset of group locations
+    grGeo:<groupID, long, lat, userID/userName> => 
+    
 )
 
 user(
@@ -34,7 +37,9 @@ user(
     uHash:<userID> => {               //user object
         username: string
         password: hashed(password)
+        location: geohash/timestamp
     }
     
+    -list of user groups
     uGroups:<userID> => [...groupID/groupName]  //returns array of groupID's / groupNames
 )
