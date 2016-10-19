@@ -10,28 +10,51 @@ import (
 )
 
 //CreateGroup - store username/password in hash
-func CreateGroup(groupname string, userID string) error {
-	if Exists(groupname) != true {
+func CreateGroup(groupname string, userID string, username string) error {
+	_, err := GetGroupID(groupname)
+	if err != nil {
 		temp, _ := db.Client.Incr(groupModel.GROUP_KEY_STORE()).Result()
 		newID := strconv.FormatInt(temp, 10)
 
-		db.Client.Set(groupModel.GROUP_ID(groupname), newID, 0)
-		db.Client.HMSet(groupModel.GROUP_HASH(newID), map[string]string{
+		pipe := db.Client.Pipeline()
+		defer pipe.Close()
+
+		pipe.Set(groupModel.GROUP_ID(groupname), newID, 0)
+		pipe.HMSet(groupModel.GROUP_HASH(newID), map[string]string{
 			"groupname": groupname,
 			"owner":     userID,
 		})
 
-		db.Client.SAdd(groupModel.GROUP_MEMBERS(newID), userID)
-		db.Client.SAdd(groupModel.GROUP_MEMBERS(newID), 123345)
-		db.Client.SAdd(userModel.USER_GROUPS(userID), newID)
-		return nil
+		pipe.SAdd(groupModel.GROUP_MEMBERS(newID), userID+"/"+username)
+		pipe.SAdd(userModel.USER_GROUPS(userID), newID+"/"+groupname)
+
+		_, err = pipe.Exec()
+
+		return err
 	}
+
 	return errors.New("group already exists")
 }
 
-//Exists - check if group exists in redis - return boolean
-func Exists(groupname string) bool {
-	return db.Client.Get(groupModel.GROUP_ID(groupname)).Err() == nil
+//GetGroupID - get the group id - check if group exists
+func GetGroupID(groupname string) (string, error) {
+	return db.Client.Get(groupModel.GROUP_ID(groupname)).Result()
+}
+
+//GetGroupMembers - returns string array of group members - userID/userName
+func GetGroupMembers(groupID string) []string {
+	result, _ := db.Client.SMembers(groupModel.GROUP_MEMBERS(groupID)).Result()
+	return result
+}
+
+//UserIsMember - returns nil if user is member
+func UserIsMember(userID string, groupID string) error {
+	_, _, err := db.Client.SScan(groupModel.GROUP_MEMBERS(groupID), 0, userID+"/*", 1).Result()
+	return err
+}
+
+func InviteToGroup(groupOwnerId string, groupid string, inviteduserID string) error {
+	return errors.New("TODO")
 }
 
 //TODO-----------------------------------------------------------------
@@ -40,10 +63,6 @@ func JoinGroup(userID string) error {
 }
 
 func LeaveGroup(userID string, groupid string) error {
-	return errors.New("TODO")
-}
-
-func InviteToGroup(groupOwnerId string, groupid string, inviteduserID string) error {
 	return errors.New("TODO")
 }
 

@@ -11,6 +11,7 @@ group(
         groupname: string
         owner: userID
         maxmembers: int
+        password: hashed(string)
     }
     
     -set
@@ -35,5 +36,5 @@ user(
         password: hashed(password)
     }
     
-    uGroups:<userID> => [...groupID]  //returns array of groupID's
+    uGroups:<userID> => [...groupID/groupName]  //returns array of groupID's / groupNames
 )

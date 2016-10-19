@@ -1,7 +1,6 @@
 package userRoutes
 
 import (
-	"log"
 	"time"
 
 	"../../config"
@@ -12,9 +11,21 @@ import (
 
 //HandleTest - test function for random things
 func HandleTest(ctx *iris.Context) {
-	log.Println(userOperations.CreateUser("username", "password"))
-	response := "test"
-	ctx.Write(response)
+	//response := groupOperations.GetGroupMembers("1")
+	//res, _ := json.Marshal(response)
+	/*
+		pipe := db.Client.Pipeline()
+		defer pipe.Close()
+
+		for i := 0; i < 1000000; i++ {
+			s := strconv.Itoa(i)
+			pipe.HMSet("test"+s, map[string]string{"test1": s, "test2": s})
+			log.Println("group created " + s)
+		}
+		pipe.Exec()
+	*/
+
+	ctx.JSON(200, `{"message":"done"}`)
 }
 
 //CreateUser - create user account - currently takes in username and password
@@ -37,7 +48,7 @@ func Login(ctx *iris.Context) {
 	password := ctx.PostValue("password")
 
 	if userOperations.ValidLogin(username, password) == true {
-		id := userOperations.GetUserID(username)
+		id, _ := userOperations.GetUserID(username)
 
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 			"username": username,

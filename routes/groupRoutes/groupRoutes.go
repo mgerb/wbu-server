@@ -7,13 +7,14 @@ import (
 	"github.com/kataras/iris"
 )
 
-//create a new group with groupname and user id as the owner
+//CreateGroup - create a new group with groupname and user id as the owner
 func CreateGroup(ctx *iris.Context) {
 	userid := ctx.Get("id")
+	username := ctx.Get("username")
 	groupname := ctx.PostValue("groupname")
 
 	if groupname != "" {
-		err := groupOperations.CreateGroup(groupname, userid.(string))
+		err := groupOperations.CreateGroup(groupname, userid.(string), username.(string))
 		if err != nil {
 			log.Println(err)
 			ctx.JSON(500, `{"message": "Group already exists"}`)
