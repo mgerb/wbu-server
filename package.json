@@ -1,0 +1,8 @@
+{
+  "name": "wbu-server",
+  "scripts": {
+    "dev": "reflex -s go run main.go",
+    "install": "go get"
+  },
+  "author": ""
+}

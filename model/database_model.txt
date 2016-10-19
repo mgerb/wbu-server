@@ -20,7 +20,7 @@ group(
     -set
     grInv:<groupID> => [...userID]      //array of userID's
     
-    -sorted set
+    -list of messages 
     grMsg:<groupID> => [<userID>:<time>:<message>]
     
 )
