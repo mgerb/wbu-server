@@ -40,6 +40,8 @@ user(
         location: geohash/timestamp
     }
     
-    -list of user groups
+    -set of user groups
     uGroups:<userID> => [...groupID/groupName]  //returns array of groupID's / groupNames
+    
+
 )

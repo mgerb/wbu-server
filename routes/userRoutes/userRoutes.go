@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"../../config"
+	"../../operations/groupOperations"
 	"../../operations/userOperations"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/kataras/iris"
@@ -24,8 +25,22 @@ func HandleTest(ctx *iris.Context) {
 		}
 		pipe.Exec()
 	*/
+	/*
+		err := groupOperations.StoreMessage("groupid", "userid", "username", "message")
+		message := "success"
+		if err != nil {
+			message = "error"
+		}
+	*/
 
-	ctx.JSON(200, `{"message":"done"}`)
+	err := groupOperations.StoreGeoLocation("groupID", "test", "13.4", "userID", "username")
+
+	message := "success"
+	if err != nil {
+		message = err.Error()
+	}
+
+	ctx.JSON(200, `{"message":"`+message+`"}`)
 }
 
 //CreateUser - create user account - currently takes in username and password
