@@ -2,19 +2,26 @@ package groupOperations
 
 import (
 	"errors"
+	"regexp"
 	"strconv"
 
 	"../../db"
 	"../../model/groupModel"
 	"../../model/userModel"
+	"../../utils"
 )
 
 //CreateGroup - store username/password in hash
 func CreateGroup(groupname string, userID string, username string) error {
-
+	
+	//DO VALIDATION
+	if !regexp.MustCompile(utils.GroupnameRegex).MatchString(username){
+		return errors.New("Invalid group name.")
+	}
+	
 	_, err := GetGroupID(groupname)
 	if err == nil {
-		return errors.New("group already exists")
+		return errors.New("Group already exists.")
 	}
 
 	temp, _ := db.Client.Incr(groupModel.GROUP_KEY_STORE()).Result()
@@ -45,15 +52,14 @@ func GetGroupID(groupname string) (string, error) {
 }
 
 //GetGroupMembers - returns string array of group members - userID/userName
-func GetGroupMembers(groupID string) []string {
-	result, _ := db.Client.SMembers(groupModel.GROUP_MEMBERS(groupID)).Result()
-	return result
+func GetGroupMembers(groupID string) ([]string, error) {
+	return db.Client.SMembers(groupModel.GROUP_MEMBERS(groupID)).Result()
 }
 
 //UserIsMember - returns true if user is member
-func UserIsMember(userID string, groupID string) bool {
-	result, _, _ := db.Client.SScan(groupModel.GROUP_MEMBERS(groupID), 0, userID+"/*", 1).Result()
-	return len(result) > 0
+func UserIsMember(userID string, groupID string) error {
+	_, _, err := db.Client.SScan(groupModel.GROUP_MEMBERS(groupID), 0, userID+"/*", 1).Result()
+	return err
 }
 
 //TODO-----------------------------------------------------------------

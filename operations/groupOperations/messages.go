@@ -21,7 +21,7 @@ func StoreMessage(groupID string, userID string, username string, message string
 		return errors.New("Message length too long.")
 	}
 	//check if user exists in group before storing message
-	if !UserIsMember(userID, groupID) {
+	if UserIsMember(userID, groupID) == nil{
 		return errors.New("User is not in group.")
 	}
 
@@ -40,7 +40,7 @@ func GetMessages(groupID string, userID string) ([]string, error) {
 
 	//DO VALIDATION
 	//check if user exists in group before storing message
-	if !UserIsMember(userID, groupID) {
+	if UserIsMember(userID, groupID) == nil{
 		return []string{}, errors.New("User is not in group.")
 	}
 

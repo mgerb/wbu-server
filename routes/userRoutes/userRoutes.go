@@ -1,12 +1,9 @@
 package userRoutes
 
 import (
-	"time"
-
-	"../../config"
 	"../../operations/groupOperations"
 	"../../operations/userOperations"
-	"github.com/dgrijalva/jwt-go"
+	
 	"github.com/kataras/iris"
 )
 
@@ -62,19 +59,11 @@ func Login(ctx *iris.Context) {
 	username := ctx.PostValue("username")
 	password := ctx.PostValue("password")
 
-	if userOperations.ValidLogin(username, password) == true {
-		id, _ := userOperations.GetUserID(username)
-
-		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-			"username": username,
-			"id":       id,
-			"nbf":      time.Date(2015, 10, 10, 12, 0, 0, 0, time.UTC).Unix(),
-		})
-
-		tokenString, _ := token.SignedString([]byte(config.Config.TokenSecret))
-		ctx.JSON(200, `{"jwt": `+tokenString+`}`)
-
+	jwt, err := userOperations.Login(username, password)
+	
+	if err == nil {
+		ctx.JSON(200, `{"token": ` + jwt + `}`)
 	} else {
-		ctx.JSON(500, `{"message": "Invalid login credentials"}`)
+		ctx.JSON(500, `{"error": ` + err.Error() + `}`)
 	}
 }

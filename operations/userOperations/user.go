@@ -3,15 +3,24 @@ package userOperations
 import (
 	"errors"
 	"strconv"
-
+	"time"
+	"regexp"
+	"../../config"
 	"../../db"
 	"../../model/userModel"
+	"../../utils"
 	"golang.org/x/crypto/bcrypt"
+	"github.com/dgrijalva/jwt-go"
 )
 
 //CreateUser - store username/password in hash
 func CreateUser(username string, password string) error {
-
+	
+	//DO VALIDATION
+	if !regexp.MustCompile(utils.UsernameRegex).MatchString(username){
+		return errors.New("Invalid username.")
+	}	
+	
 	//check if the username already exists in redis
 	_, err := GetUserID(username)
 	if err == nil {
@@ -37,18 +46,36 @@ func CreateUser(username string, password string) error {
 	return err
 }
 
+//seconds in 30 days
+var expirationTime int64 = 30 * 24 * 60 * 60
+
 //ValidLogin - check if password and username are correct
-func ValidLogin(username string, password string) bool {
+func Login(username string, password string) (string, error) {
 	id, err := GetUserID(username)
 
 	if err == nil {
 		result, _ := db.Client.HGet(userModel.USER_HASH(id), "password").Result()
-		if bcrypt.CompareHashAndPassword([]byte(result), []byte(password)) == nil {
-			return true
+		if bcrypt.CompareHashAndPassword([]byte(result), []byte(password)) != nil {
+			return "", errors.New("Invalid password.")
 		}
+	} else {
+		return "", errors.New("User does not exist.")
 	}
 
-	return false
+	//if user has valid login - generate jwt	
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"username": username,
+		"id":       id,
+		"exp":      time.Now().Unix() + expirationTime,
+	})
+
+	tokenString, tokenError := token.SignedString([]byte(config.Config.TokenSecret))
+	
+	if tokenError != nil {
+		return "", errors.New("Token error.")
+	}
+	
+	return tokenString, nil
 }
 
 //GetUserID = return user id as string
