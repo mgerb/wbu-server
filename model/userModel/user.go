@@ -9,12 +9,12 @@ const (
 	uGrps = "uGrps:" //sorted set for groups that user is in
 )
 
-func USER_ID(s string) string {
-	return uID + s
-}
-
 func USER_KEY_STORE() string {
 	return uKeys
+}
+
+func USER_ID(s string) string {
+	return uID + s
 }
 
 func USER_HASH(s string) string {

@@ -8,18 +8,18 @@ import (
 	"../../db"
 	"../../model/groupModel"
 	"../../model/userModel"
-	"../../utils"
+	"../../utils/regex"
 )
 
-//CreateGroup - store username/password in hash
-func CreateGroup(groupname string, userID string, username string) error {
-	
+//CreateGroup - store userName/password in hash
+func CreateGroup(groupName string, userID string, userName string) error {
+
 	//DO VALIDATION
-	if !regexp.MustCompile(utils.GroupnameRegex).MatchString(username){
+	if !regexp.MustCompile(regex.GROUP_NAME).MatchString(groupName) {
 		return errors.New("Invalid group name.")
 	}
-	
-	_, err := GetGroupID(groupname)
+
+	_, err := GetGroupID(groupName)
 	if err == nil {
 		return errors.New("Group already exists.")
 	}
@@ -30,16 +30,16 @@ func CreateGroup(groupname string, userID string, username string) error {
 	pipe := db.Client.Pipeline()
 	defer pipe.Close()
 
-	pipe.Set(groupModel.GROUP_ID(groupname), newID, 0)
+	pipe.Set(groupModel.GROUP_ID(groupName), newID, 0)
 
 	//store group hash
 	pipe.HMSet(groupModel.GROUP_HASH(newID), map[string]string{
-		"groupname": groupname,
+		"groupName": groupName,
 		"owner":     userID,
 	})
 
-	pipe.SAdd(groupModel.GROUP_MEMBERS(newID), userID+"/"+username)
-	pipe.SAdd(userModel.USER_GROUPS(userID), newID+"/"+groupname)
+	pipe.SAdd(groupModel.GROUP_MEMBERS(newID), userID+"/"+userName)
+	pipe.SAdd(userModel.USER_GROUPS(userID), newID+"/"+groupName)
 
 	_, returnError := pipe.Exec()
 
@@ -47,8 +47,8 @@ func CreateGroup(groupname string, userID string, username string) error {
 }
 
 //GetGroupID - get the group id - check if group exists
-func GetGroupID(groupname string) (string, error) {
-	return db.Client.Get(groupModel.GROUP_ID(groupname)).Result()
+func GetGroupID(groupName string) (string, error) {
+	return db.Client.Get(groupModel.GROUP_ID(groupName)).Result()
 }
 
 //GetGroupMembers - returns string array of group members - userID/userName
@@ -56,14 +56,20 @@ func GetGroupMembers(groupID string) ([]string, error) {
 	return db.Client.SMembers(groupModel.GROUP_MEMBERS(groupID)).Result()
 }
 
+//TODO - NEEDS FIXING
 //UserIsMember - returns true if user is member
-func UserIsMember(userID string, groupID string) error {
-	_, _, err := db.Client.SScan(groupModel.GROUP_MEMBERS(groupID), 0, userID+"/*", 1).Result()
-	return err
+func UserIsMember(userID string, userName string, groupID string) bool {
+	isMember, err := db.Client.SIsMember(groupModel.GROUP_MEMBERS(groupID), userID+"/"+userName).Result()
+
+	if err == nil {
+		return isMember
+	} else {
+		return false
+	}
 }
 
 //TODO-----------------------------------------------------------------
-func InviteToGroup(groupOwnerId string, groupid string, inviteduserID string) error {
+func InviteToGroup(groupOwnerId string, groupID string, inviteduserID string) error {
 	return errors.New("TODO")
 }
 

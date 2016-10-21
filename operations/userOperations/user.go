@@ -2,29 +2,34 @@ package userOperations
 
 import (
 	"errors"
+	"regexp"
 	"strconv"
 	"time"
-	"regexp"
+
 	"../../config"
 	"../../db"
 	"../../model/userModel"
-	"../../utils"
-	"golang.org/x/crypto/bcrypt"
+	"../../utils/regex"
 	"github.com/dgrijalva/jwt-go"
+	"golang.org/x/crypto/bcrypt"
 )
 
-//CreateUser - store username/password in hash
-func CreateUser(username string, password string) error {
-	
+//CreateUser - store userName/password in hash
+func CreateUser(userName string, password string) error {
+
 	//DO VALIDATION
-	if !regexp.MustCompile(utils.UsernameRegex).MatchString(username){
-		return errors.New("Invalid username.")
-	}	
-	
-	//check if the username already exists in redis
-	_, err := GetUserID(username)
+	if !regexp.MustCompile(regex.USERNAME).MatchString(userName) {
+		return errors.New("Invalid userName.")
+	}
+
+	if !regexp.MustCompile(regex.PASSWORD).MatchString(password) {
+		return errors.New("Invalid password.")
+	}
+
+	//check if the userName already exists in redis
+	_, err := GetUserID(userName)
 	if err == nil {
-		return errors.New("Username already exists.")
+		return errors.New("userName already exists.")
 	}
 
 	temp, _ := db.Client.Incr(userModel.USER_KEY_STORE()).Result()
@@ -33,11 +38,11 @@ func CreateUser(username string, password string) error {
 	pipe := db.Client.Pipeline()
 	defer pipe.Close()
 
-	pipe.Set(userModel.USER_ID(username), newID, 0)
+	pipe.Set(userModel.USER_ID(userName), newID, 0)
 
 	//set user object in redis
 	pipe.HMSet(userModel.USER_HASH(newID), map[string]string{
-		"username": username,
+		"userName": userName,
 		"password": generateHash(password),
 	})
 
@@ -49,9 +54,9 @@ func CreateUser(username string, password string) error {
 //seconds in 30 days
 var expirationTime int64 = 30 * 24 * 60 * 60
 
-//ValidLogin - check if password and username are correct
-func Login(username string, password string) (string, error) {
-	id, err := GetUserID(username)
+//ValidLogin - check if password and userName are correct
+func Login(userName string, password string) (string, error) {
+	id, err := GetUserID(userName)
 
 	if err == nil {
 		result, _ := db.Client.HGet(userModel.USER_HASH(id), "password").Result()
@@ -62,25 +67,25 @@ func Login(username string, password string) (string, error) {
 		return "", errors.New("User does not exist.")
 	}
 
-	//if user has valid login - generate jwt	
+	//if user has valid login - generate jwt
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"username": username,
-		"id":       id,
+		"userName": userName,
+		"userID":   id,
 		"exp":      time.Now().Unix() + expirationTime,
 	})
 
 	tokenString, tokenError := token.SignedString([]byte(config.Config.TokenSecret))
-	
+
 	if tokenError != nil {
 		return "", errors.New("Token error.")
 	}
-	
+
 	return tokenString, nil
 }
 
 //GetUserID = return user id as string
-func GetUserID(username string) (string, error) {
-	return db.Client.Get(userModel.USER_ID(username)).Result()
+func GetUserID(userName string) (string, error) {
+	return db.Client.Get(userModel.USER_ID(userName)).Result()
 }
 
 //GetUserGroups - get all the groups the user exists in

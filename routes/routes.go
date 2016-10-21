@@ -17,16 +17,18 @@ func Routes() *iris.Framework {
 
 	//user
 	app.Get("/test", userRoutes.HandleTest)
+	app.Get("/userGroups", userRoutes.GetUserGroups)
 
 	//groups
 
 	//post requests
 	//user
-	app.Post("/createuser", userRoutes.CreateUser)
+	app.Post("/createUser", userRoutes.CreateUser)
 	app.Post("/login", userRoutes.Login)
 
 	//groups
-	app.Post("/creategroup", groupRoutes.CreateGroup)
+	app.Post("/createGroup", groupRoutes.CreateGroup)
+	app.Post("/group/storeMessage", groupRoutes.StoreMessage)
 
 	return app
 }

@@ -3,7 +3,8 @@ package userRoutes
 import (
 	"../../operations/groupOperations"
 	"../../operations/userOperations"
-	
+
+	"../../utils/response"
 	"github.com/kataras/iris"
 )
 
@@ -23,14 +24,14 @@ func HandleTest(ctx *iris.Context) {
 		pipe.Exec()
 	*/
 	/*
-		err := groupOperations.StoreMessage("groupid", "userid", "username", "message")
+		err := groupOperations.StoreMessage("groupid", "userid", "userName", "message")
 		message := "success"
 		if err != nil {
 			message = "error"
 		}
 	*/
 
-	err := groupOperations.StoreGeoLocation("groupID", "test", "13.4", "userID", "username")
+	err := groupOperations.StoreGeoLocation("groupID", "test", "13.4", "userID", "userName")
 
 	message := "success"
 	if err != nil {
@@ -40,12 +41,12 @@ func HandleTest(ctx *iris.Context) {
 	ctx.JSON(200, `{"message":"`+message+`"}`)
 }
 
-//CreateUser - create user account - currently takes in username and password
+//CreateUser - create user account - currently takes in userName and password
 func CreateUser(ctx *iris.Context) {
-	username := ctx.PostValue("username")
+	userName := ctx.PostValue("userName")
 	password := ctx.PostValue("password")
 
-	err := userOperations.CreateUser(username, password)
+	err := userOperations.CreateUser(userName, password)
 
 	if err == nil {
 		ctx.JSON(200, `{"message": "Account Created"}`)
@@ -56,14 +57,26 @@ func CreateUser(ctx *iris.Context) {
 
 //Login - log the user in - on success send jwt
 func Login(ctx *iris.Context) {
-	username := ctx.PostValue("username")
+	userName := ctx.PostValue("userName")
 	password := ctx.PostValue("password")
 
-	jwt, err := userOperations.Login(username, password)
-	
+	jwt, err := userOperations.Login(userName, password)
+
 	if err == nil {
-		ctx.JSON(200, `{"token": ` + jwt + `}`)
+		ctx.JSON(200, `{"token": `+jwt+`}`)
 	} else {
-		ctx.JSON(500, `{"error": ` + err.Error() + `}`)
+		ctx.JSON(500, `{"error": `+err.Error()+`}`)
+	}
+}
+
+func GetUserGroups(ctx *iris.Context) {
+	userID := ctx.Get("userID").(string)
+
+	groups, err := userOperations.GetUserGroups(userID)
+
+	if err == nil {
+		ctx.JSON(200, groups)
+	} else {
+		ctx.JSON(500, response.Json("Unable to get groups.", response.INTERNAL_ERROR))
 	}
 }

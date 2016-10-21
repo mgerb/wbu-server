@@ -18,13 +18,14 @@ func ApplyMiddleware(ctx *iris.Framework) {
 func checkJWT(ctx *iris.Context) {
 	path := ctx.PathString()
 
-	if path == "/login" || path == "/createuser" {
+	if path == "/login" || path == "/createUser" {
 		ctx.Next()
 	} else {
 		//get Authorization header - jwt token
 		authToken := ctx.RequestHeader("Authorization")
 
 		//parse the token
+		//TODO - FIX ERROR HANDLING HERE
 		token, err := jwt.Parse(authToken, func(token *jwt.Token) (interface{}, error) {
 			return []byte(config.Config.TokenSecret), nil
 		})
@@ -34,10 +35,10 @@ func checkJWT(ctx *iris.Context) {
 			log.Println(err.Error())
 			ctx.JSON(500, `{"message": "Invalid Token"}`)
 		} else {
-			//get the claims from token - username and id
+			//get the claims from token - userName and id
 			if claims, ok := token.Claims.(jwt.MapClaims); token.Valid && ok {
-				ctx.Set("username", claims["username"].(string))
-				ctx.Set("id", claims["id"].(string))
+				ctx.Set("userName", claims["userName"].(string))
+				ctx.Set("userID", claims["userID"].(string))
 				ctx.Next()
 			} else {
 				log.Println(err.Error())
