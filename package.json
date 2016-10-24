@@ -1,8 +1,7 @@
 {
-  "name": "wbu-server",
   "scripts": {
     "dev": "reflex -s go run main.go",
+    "c9": "reflex -e -c reflex.conf",
     "install": "go get"
-  },
-  "author": ""
+  }
 }

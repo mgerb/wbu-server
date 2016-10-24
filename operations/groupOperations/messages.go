@@ -1,12 +1,11 @@
 package groupOperations
 
 import (
+	"../../db"
+	"../../model/groupModel"
 	"errors"
 	"strconv"
 	"time"
-
-	"../../db"
-	"../../model/groupModel"
 )
 
 //set max number of messages stored at any one point in time
@@ -17,8 +16,8 @@ func StoreMessage(groupID string, userID string, userName string, message string
 
 	//DO VALIDATION
 	//check message length - must be less than 150 characters
-	if len(message) > 150 {
-		return errors.New("Message length too long.")
+	if len(message) > 150 || len(message) == 0 {
+		return errors.New("Invalid message length.")
 	}
 	//check if user exists in group before storing message
 	if !UserIsMember(userID, userName, groupID) {
@@ -36,7 +35,7 @@ func StoreMessage(groupID string, userID string, userName string, message string
 	return err
 }
 
-func GetMessages(groupID string, userID string, userName string) ([]string, error) {
+func GetMessages(userID string, userName string, groupID string) ([]string, error) {
 
 	//DO VALIDATION
 	//check if user exists in group before storing message
@@ -45,4 +44,18 @@ func GetMessages(groupID string, userID string, userName string) ([]string, erro
 	}
 
 	return db.Client.LRange(groupModel.GROUP_MESSAGE(groupID), 0, -1).Result()
+
+	/*
+		if err == nil {
+			json, jsonError := json.Marshal(messages)
+
+			if jsonError == nil {
+				return string(json), nil
+			} else {
+				return "", errors.New("json error")
+			}
+		} else {
+			return "", errors.New("Error retrieving messages.")
+		}
+	*/
 }

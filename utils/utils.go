@@ -14,4 +14,5 @@ func StructToMap(u interface{}) map[string]string {
 	}
 
 	return m2
+
 }

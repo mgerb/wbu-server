@@ -1,9 +1,5 @@
 package response
 
-import (
-	"encoding/json"
-)
-
 //error types
 const (
 	INTERNAL_ERROR = 1
@@ -13,18 +9,11 @@ const (
 )
 
 //Json - return json string for response
-func Json(message string, statusCode int) string {
+func Json(message string, statusCode int) map[string]interface{} {
 
-	jsonMap := map[string]interface{}{
+	return map[string]interface{}{
 		"status":  statusCode,
 		"message": string(message),
 	}
 
-	response, err := json.Marshal(jsonMap)
-
-	if err != nil {
-		return `{"error": "error"}`
-	}
-
-	return string(response)
 }

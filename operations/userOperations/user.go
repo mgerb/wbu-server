@@ -51,10 +51,10 @@ func CreateUser(userName string, password string) error {
 	return err
 }
 
-//seconds in 30 days
+//expiration time for JWT
 var expirationTime int64 = 30 * 24 * 60 * 60
 
-//ValidLogin - check if password and userName are correct
+//Login - check if password and userName are correct
 func Login(userName string, password string) (string, error) {
 	id, err := GetUserID(userName)
 
@@ -89,7 +89,7 @@ func GetUserID(userName string) (string, error) {
 }
 
 //GetUserGroups - get all the groups the user exists in
-func GetUserGroups(userID string) ([]string, error) {
+func GetGroups(userID string) ([]string, error) {
 	return db.Client.SMembers(userModel.USER_GROUPS(userID)).Result()
 }
 

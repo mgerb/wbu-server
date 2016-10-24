@@ -17,7 +17,21 @@ func CreateGroup(ctx *iris.Context) {
 	if err == nil {
 		ctx.JSON(200, response.Json("Group created.", response.SUCCESS))
 	} else {
-		ctx.JSON(500, `{"message": "`+err.Error()+`"}`)
+		ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
+	}
+}
+
+func GetMembers(ctx *iris.Context) {
+	userID := ctx.Get("userID").(string)
+	userName := ctx.Get("userName").(string)
+	groupID := ctx.Param("groupID")
+
+	members, err := groupOperations.GetMembers(userID, userName, groupID)
+
+	if err == nil {
+		ctx.JSON(200, map[string]interface{}{"members": members})
+	} else {
+		ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
 	}
 }
 
@@ -26,13 +40,28 @@ func StoreMessage(ctx *iris.Context) {
 	userID := ctx.Get("userID").(string)
 	userName := ctx.Get("userName").(string)
 
-	groupID := ctx.PostValue("groupID")
+	groupID := ctx.Param("groupID")
 	message := ctx.PostValue("message")
 
 	err := groupOperations.StoreMessage(groupID, userID, userName, message)
 
 	if err == nil {
 		ctx.JSON(200, response.Json("Message received.", response.SUCCESS))
+	} else {
+		ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
+	}
+}
+
+//GetMessages - get all messages for group
+func GetMessages(ctx *iris.Context) {
+	userID := ctx.Get("userID").(string)
+	userName := ctx.Get("userName").(string)
+	groupID := ctx.Param("groupID")
+
+	messages, err := groupOperations.GetMessages(userID, userName, groupID)
+
+	if err == nil {
+		ctx.JSON(200, map[string]interface{}{"messages": messages})
 	} else {
 		ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
 	}

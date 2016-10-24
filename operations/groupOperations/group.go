@@ -1,14 +1,13 @@
 package groupOperations
 
 import (
-	"errors"
-	"regexp"
-	"strconv"
-
 	"../../db"
 	"../../model/groupModel"
 	"../../model/userModel"
 	"../../utils/regex"
+	"errors"
+	"regexp"
+	"strconv"
 )
 
 //CreateGroup - store userName/password in hash
@@ -52,11 +51,15 @@ func GetGroupID(groupName string) (string, error) {
 }
 
 //GetGroupMembers - returns string array of group members - userID/userName
-func GetGroupMembers(groupID string) ([]string, error) {
+func GetMembers(userID string, userName string, groupID string) ([]string, error) {
+
+	if !UserIsMember(userID, userName, groupID) {
+		return []string{}, errors.New("You are not a member of this group.")
+	}
+
 	return db.Client.SMembers(groupModel.GROUP_MEMBERS(groupID)).Result()
 }
 
-//TODO - NEEDS FIXING
 //UserIsMember - returns true if user is member
 func UserIsMember(userID string, userName string, groupID string) bool {
 	isMember, err := db.Client.SIsMember(groupModel.GROUP_MEMBERS(groupID), userID+"/"+userName).Result()

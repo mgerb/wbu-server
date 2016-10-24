@@ -38,7 +38,7 @@ func HandleTest(ctx *iris.Context) {
 		message = err.Error()
 	}
 
-	ctx.JSON(200, `{"message":"`+message+`"}`)
+	ctx.JSON(200, map[string]string{"message": message})
 }
 
 //CreateUser - create user account - currently takes in userName and password
@@ -49,9 +49,9 @@ func CreateUser(ctx *iris.Context) {
 	err := userOperations.CreateUser(userName, password)
 
 	if err == nil {
-		ctx.JSON(200, `{"message": "Account Created"}`)
+		ctx.JSON(200, map[string]string{"message": "Account Created"})
 	} else {
-		ctx.JSON(500, `{"message": "`+err.Error()+`"}`)
+		ctx.JSON(500, map[string]string{"error": err.Error()})
 	}
 }
 
@@ -63,19 +63,19 @@ func Login(ctx *iris.Context) {
 	jwt, err := userOperations.Login(userName, password)
 
 	if err == nil {
-		ctx.JSON(200, `{"token": `+jwt+`}`)
+		ctx.JSON(200, map[string]string{"token": jwt})
 	} else {
-		ctx.JSON(500, `{"error": `+err.Error()+`}`)
+		ctx.JSON(500, map[string]string{"error": err.Error()})
 	}
 }
 
-func GetUserGroups(ctx *iris.Context) {
+func GetGroups(ctx *iris.Context) {
 	userID := ctx.Get("userID").(string)
 
-	groups, err := userOperations.GetUserGroups(userID)
+	groups, err := userOperations.GetGroups(userID)
 
 	if err == nil {
-		ctx.JSON(200, groups)
+		ctx.JSON(200, map[string]interface{}{"groups": groups})
 	} else {
 		ctx.JSON(500, response.Json("Unable to get groups.", response.INTERNAL_ERROR))
 	}

@@ -18,7 +18,7 @@ func ApplyMiddleware(ctx *iris.Framework) {
 func checkJWT(ctx *iris.Context) {
 	path := ctx.PathString()
 
-	if path == "/login" || path == "/createUser" {
+	if path == "/user/login" || path == "/user/createUser" {
 		ctx.Next()
 	} else {
 		//get Authorization header - jwt token

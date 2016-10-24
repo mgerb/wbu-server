@@ -13,22 +13,24 @@ func Routes() *iris.Framework {
 
 	middleware.ApplyMiddleware(app)
 
-	//get requests
+	//GET---------------------------------------------------
 
 	//user
 	app.Get("/test", userRoutes.HandleTest)
-	app.Get("/userGroups", userRoutes.GetUserGroups)
+	app.Get("/user/userGroups", userRoutes.GetGroups)
 
 	//groups
+	app.Get("/group/members/:groupID", groupRoutes.GetMembers)
+	app.Get("/group/messages/:groupID", groupRoutes.GetMessages)
 
-	//post requests
+	//POST---------------------------------------------------
 	//user
-	app.Post("/createUser", userRoutes.CreateUser)
-	app.Post("/login", userRoutes.Login)
+	app.Post("/user/createUser", userRoutes.CreateUser)
+	app.Post("/user/login", userRoutes.Login)
 
 	//groups
-	app.Post("/createGroup", groupRoutes.CreateGroup)
-	app.Post("/group/storeMessage", groupRoutes.StoreMessage)
+	app.Post("/group/createGroup", groupRoutes.CreateGroup)
+	app.Post("/group/storeMessage/:groupID", groupRoutes.StoreMessage)
 
 	return app
 }
