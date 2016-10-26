@@ -1,5 +1,12 @@
 {
-    "ServerPort": "",
+    "ServerConfig": {
+        "Address": "",
+        "TLSCertFile": "",
+        "TLSKeyFile": "",
+        "DisableHTTP2": true,
+        "ReadTimeout": 0,
+        "WriteTimeout": 0
+    },
     "DatabaseAddress": "",
     "DatabasePassword": "",
     "TokenSecret": ""

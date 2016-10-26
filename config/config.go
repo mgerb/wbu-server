@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+
+	"github.com/labstack/echo/engine"
 )
 
 var Config configStruct
@@ -17,10 +19,10 @@ type configFlags struct {
 }
 
 type configStruct struct {
-	ServerPort       string `json:"ServerPort"`
-	DatabaseAddress  string `json:"DatabaseAddress"`
-	DatabasePassword string `json:"DatabasePassword"`
-	TokenSecret      string `json:"TokenSecret"`
+	ServerConfig     engine.Config `json:"ServerConfig"`
+	DatabaseAddress  string        `json:"DatabaseAddress"`
+	DatabasePassword string        `json:"DatabasePassword"`
+	TokenSecret      string        `json:"TokenSecret"`
 }
 
 func ReadConfig() {
