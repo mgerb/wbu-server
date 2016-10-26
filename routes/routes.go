@@ -4,33 +4,34 @@ import (
 	"./groupRoutes"
 	"./middleware"
 	"./userRoutes"
-	"github.com/kataras/iris"
+
+	"github.com/labstack/echo"
+	//"github.com/labstack/echo/engine/standard"
+	//"github.com/labstack/echo/middleware"
 )
 
 //register routes
-func Routes() *iris.Framework {
-	app := iris.New()
+func RegisterRoutes(app *echo.Echo) {
 
 	middleware.ApplyMiddleware(app)
 
 	//GET---------------------------------------------------
 
 	//user
-	app.Get("/test", userRoutes.HandleTest)
-	app.Get("/user/userGroups", userRoutes.GetGroups)
+	app.GET("/test", userRoutes.HandleTest)
+	app.GET("/user/userGroups", userRoutes.GetGroups)
 
 	//groups
-	app.Get("/group/members/:groupID", groupRoutes.GetMembers)
-	app.Get("/group/messages/:groupID", groupRoutes.GetMessages)
+	app.GET("/group/members/:groupID", groupRoutes.GetMembers)
+	app.GET("/group/messages/:groupID", groupRoutes.GetMessages)
 
 	//POST---------------------------------------------------
 	//user
-	app.Post("/user/createUser", userRoutes.CreateUser)
-	app.Post("/user/login", userRoutes.Login)
+	app.POST("/user/createUser", userRoutes.CreateUser)
+	app.POST("/user/login", userRoutes.Login)
 
 	//groups
-	app.Post("/group/createGroup", groupRoutes.CreateGroup)
-	app.Post("/group/storeMessage/:groupID", groupRoutes.StoreMessage)
+	app.POST("/group/createGroup", groupRoutes.CreateGroup)
+	app.POST("/group/storeMessage/:groupID", groupRoutes.StoreMessage)
 
-	return app
 }

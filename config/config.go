@@ -2,12 +2,19 @@ package config
 
 import (
 	"encoding/json"
+	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 )
 
 var Config configStruct
+var Flags configFlags
+
+type configFlags struct {
+	Production bool
+}
 
 type configStruct struct {
 	ServerPort       string `json:"ServerPort"`
@@ -35,4 +42,17 @@ func ReadConfig() {
 		log.Println(err)
 	}
 
+}
+
+func ParseFlags() {
+	Flags.Production = false
+
+	boolPtr := flag.Bool("p", false, "Production mode")
+
+	flag.Parse()
+
+	if *boolPtr {
+		fmt.Println("Starting production mode...")
+		Flags.Production = true
+	}
 }

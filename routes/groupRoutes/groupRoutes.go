@@ -3,25 +3,25 @@ package groupRoutes
 import (
 	"../../operations/groupOperations"
 	"../../utils/response"
-	"github.com/kataras/iris"
+	"github.com/labstack/echo"
 )
 
 //CreateGroup - create a new group with groupName and user id as the owner
-func CreateGroup(ctx *iris.Context) {
+func CreateGroup(ctx echo.Context) error {
 	userID := ctx.Get("userID").(string)
 	userName := ctx.Get("userName").(string)
-	groupName := ctx.PostValue("groupName")
+	groupName := ctx.FormValue("groupName")
 
 	err := groupOperations.CreateGroup(groupName, userID, userName)
 
 	if err == nil {
-		ctx.JSON(200, response.Json("Group created.", response.SUCCESS))
+		return ctx.JSON(200, response.Json("Group created.", response.SUCCESS))
 	} else {
-		ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
+		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
 	}
 }
 
-func GetMembers(ctx *iris.Context) {
+func GetMembers(ctx echo.Context) error {
 	userID := ctx.Get("userID").(string)
 	userName := ctx.Get("userName").(string)
 	groupID := ctx.Param("groupID")
@@ -29,31 +29,31 @@ func GetMembers(ctx *iris.Context) {
 	members, err := groupOperations.GetMembers(userID, userName, groupID)
 
 	if err == nil {
-		ctx.JSON(200, map[string]interface{}{"members": members})
+		return ctx.JSON(200, map[string]interface{}{"members": members})
 	} else {
-		ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
+		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
 	}
 }
 
 //StoreMessage - store a message in a group
-func StoreMessage(ctx *iris.Context) {
+func StoreMessage(ctx echo.Context) error {
 	userID := ctx.Get("userID").(string)
 	userName := ctx.Get("userName").(string)
 
 	groupID := ctx.Param("groupID")
-	message := ctx.PostValue("message")
+	message := ctx.FormValue("message")
 
 	err := groupOperations.StoreMessage(groupID, userID, userName, message)
 
 	if err == nil {
-		ctx.JSON(200, response.Json("Message received.", response.SUCCESS))
+		return ctx.JSON(200, response.Json("Message received.", response.SUCCESS))
 	} else {
-		ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
+		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
 	}
 }
 
 //GetMessages - get all messages for group
-func GetMessages(ctx *iris.Context) {
+func GetMessages(ctx echo.Context) error {
 	userID := ctx.Get("userID").(string)
 	userName := ctx.Get("userName").(string)
 	groupID := ctx.Param("groupID")
@@ -61,8 +61,8 @@ func GetMessages(ctx *iris.Context) {
 	messages, err := groupOperations.GetMessages(userID, userName, groupID)
 
 	if err == nil {
-		ctx.JSON(200, map[string]interface{}{"messages": messages})
+		return ctx.JSON(200, map[string]interface{}{"messages": messages})
 	} else {
-		ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
+		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
 	}
 }

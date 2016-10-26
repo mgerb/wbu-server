@@ -5,11 +5,11 @@ import (
 	"../../operations/userOperations"
 
 	"../../utils/response"
-	"github.com/kataras/iris"
+	"github.com/labstack/echo"
 )
 
 //HandleTest - test function for random things
-func HandleTest(ctx *iris.Context) {
+func HandleTest(ctx echo.Context) error {
 	//response := groupOperations.GetGroupMembers("1")
 	//res, _ := json.Marshal(response)
 	/*
@@ -38,45 +38,45 @@ func HandleTest(ctx *iris.Context) {
 		message = err.Error()
 	}
 
-	ctx.JSON(200, map[string]string{"message": message})
+	return ctx.JSON(200, map[string]string{"message": message})
 }
 
 //CreateUser - create user account - currently takes in userName and password
-func CreateUser(ctx *iris.Context) {
-	userName := ctx.PostValue("userName")
-	password := ctx.PostValue("password")
+func CreateUser(ctx echo.Context) error {
+	userName := ctx.FormValue("userName")
+	password := ctx.FormValue("password")
 
 	err := userOperations.CreateUser(userName, password)
 
 	if err == nil {
-		ctx.JSON(200, map[string]string{"message": "Account Created"})
+		return ctx.JSON(200, map[string]string{"message": "Account Created"})
 	} else {
-		ctx.JSON(500, map[string]string{"error": err.Error()})
+		return ctx.JSON(500, map[string]string{"error": err.Error()})
 	}
 }
 
 //Login - log the user in - on success send jwt
-func Login(ctx *iris.Context) {
-	userName := ctx.PostValue("userName")
-	password := ctx.PostValue("password")
+func Login(ctx echo.Context) error {
+	userName := ctx.FormValue("userName")
+	password := ctx.FormValue("password")
 
 	jwt, err := userOperations.Login(userName, password)
 
 	if err == nil {
-		ctx.JSON(200, map[string]string{"token": jwt})
+		return ctx.JSON(200, map[string]string{"token": jwt})
 	} else {
-		ctx.JSON(500, map[string]string{"error": err.Error()})
+		return ctx.JSON(500, map[string]string{"error": err.Error()})
 	}
 }
 
-func GetGroups(ctx *iris.Context) {
+func GetGroups(ctx echo.Context) error {
 	userID := ctx.Get("userID").(string)
 
 	groups, err := userOperations.GetGroups(userID)
 
 	if err == nil {
-		ctx.JSON(200, map[string]interface{}{"groups": groups})
+		return ctx.JSON(200, map[string]interface{}{"groups": groups})
 	} else {
-		ctx.JSON(500, response.Json("Unable to get groups.", response.INTERNAL_ERROR))
+		return ctx.JSON(500, response.Json("Unable to get groups.", response.INTERNAL_ERROR))
 	}
 }
