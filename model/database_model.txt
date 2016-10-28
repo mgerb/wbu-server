@@ -17,14 +17,16 @@ group(
     -set
     grMem:<groupID> => [...userID]      //array of userID's
     
+    deprecate??xxxxxxxxxxxxxxxxxxxxxx
     -set
     grInv:<groupID> => [...userID]      //array of userID's
+    xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     
     -list of messages 
     grMsg:<groupID> => [<userID>:<time>:<message>]
     
     -geoset of group locations
-    grGeo:<groupID, long, lat, userID/userName> => 
+    grGeo:<groupID, long, lat, userID/userName/timestamp> => 
     
 )
 
@@ -38,10 +40,13 @@ user(
         username: string
         password: hashed(password)
         location: geohash/timestamp
+        apnsToken: string             //apple push notification service token
+        gcmToken: string              //google cloud messaging token
     }
     
     -set of user groups
-    uGroups:<userID> => [...groupID/groupName]  //returns array of groupID's / groupNames
+    uGrps:<userID> => [...groupID/groupName]  //returns array of groupID's / groupNames
     
-
+    -set
+    uInv:<userID> => [...groupID] //contains set of group id's that user has pending invites to
 )
