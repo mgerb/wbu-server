@@ -38,24 +38,10 @@ func StoreMessage(groupID string, userID string, userName string, message string
 func GetMessages(userID string, userName string, groupID string) ([]string, error) {
 
 	//DO VALIDATION
-	//check if user exists in group before storing message
+	//check if user exists in group before gettings messages
 	if !UserIsMember(userID, userName, groupID) {
 		return []string{}, errors.New("User is not in group.")
 	}
 
 	return db.Client.LRange(groupModel.GROUP_MESSAGE(groupID), 0, -1).Result()
-
-	/*
-		if err == nil {
-			json, jsonError := json.Marshal(messages)
-
-			if jsonError == nil {
-				return string(json), nil
-			} else {
-				return "", errors.New("json error")
-			}
-		} else {
-			return "", errors.New("Error retrieving messages.")
-		}
-	*/
 }

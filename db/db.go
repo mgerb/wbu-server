@@ -3,7 +3,7 @@ package db
 import (
 	"fmt"
 
-	redis "gopkg.in/redis.v4"
+	redis "gopkg.in/redis.v5"
 )
 
 var Client *redis.Client

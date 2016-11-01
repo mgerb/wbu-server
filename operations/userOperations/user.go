@@ -41,10 +41,7 @@ func CreateUser(userName string, password string) error {
 	pipe.Set(userModel.USER_ID(userName), newID, 0)
 
 	//set user object in redis
-	pipe.HMSet(userModel.USER_HASH(newID), map[string]string{
-		"userName": userName,
-		"password": generateHash(password),
-	})
+	pipe.HMSet(userModel.USER_HASH(newID), userModel.USER_HASH_MAP(userName, generateHash(password), "0"))
 
 	_, err = pipe.Exec()
 
@@ -93,19 +90,22 @@ func GetGroups(userID string) ([]string, error) {
 	return db.Client.SMembers(userModel.USER_GROUPS(userID)).Result()
 }
 
-func generateHash(password string) string {
-	hash, _ := bcrypt.GenerateFromPassword([]byte(password), 0)
-	return string(hash)
+func GetInvites(userID string) ([]string, error) {
+	return db.Client.SMembers(userModel.USER_GROUP_INVITES(userID)).Result()
 }
 
-//
-//
-//
-//TODO
+//TODO----------------------------------------------------------
 func JoinGroup(userID string) error {
 	return errors.New("TODO")
 }
 
 func LeaveGroup(userID string, groupid string) error {
 	return errors.New("TODO")
+}
+
+//TODO----------------------------------------------------------
+
+func generateHash(password string) string {
+	hash, _ := bcrypt.GenerateFromPassword([]byte(password), 0)
+	return string(hash)
 }

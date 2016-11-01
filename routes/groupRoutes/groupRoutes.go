@@ -66,3 +66,19 @@ func GetMessages(ctx echo.Context) error {
 		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
 	}
 }
+
+func InviteToGroup(ctx echo.Context) error {
+	userID := ctx.Get("userID").(string)
+	groupID := ctx.FormValue("groupID")
+	groupName := ctx.FormValue("groupName")
+	invUserID := ctx.FormValue("invUserID")
+	invUserName := ctx.FormValue("invUserName")
+
+	err := groupOperations.InviteToGroup(userID, groupID, groupName, invUserID, invUserName)
+
+	if err == nil {
+		return ctx.JSON(200, map[string]interface{}{"message": "success"})
+	} else {
+		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
+	}
+}

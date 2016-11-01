@@ -80,3 +80,15 @@ func GetGroups(ctx echo.Context) error {
 		return ctx.JSON(500, response.Json("Unable to get groups.", response.INTERNAL_ERROR))
 	}
 }
+
+func GetInvites(ctx echo.Context) error {
+	userID := ctx.Get("userID").(string)
+
+	invites, err := userOperations.GetInvites(userID)
+
+	if err == nil {
+		return ctx.JSON(200, map[string]interface{}{"invites": invites})
+	} else {
+		return ctx.JSON(500, response.Json("Unable to get invites.", response.INTERNAL_ERROR))
+	}
+}

@@ -1,12 +1,12 @@
 package groupOperations
 
 import (
-	"errors"
-	"strconv"
-
 	"../../db"
 	"../../model/groupModel"
-	redis "gopkg.in/redis.v4"
+	"errors"
+	redis "gopkg.in/redis.v5"
+	"strconv"
+	"time"
 )
 
 func StoreGeoLocation(groupID string, longitude string, latitude string, userID string, userName string) error {
@@ -34,7 +34,7 @@ func StoreGeoLocation(groupID string, longitude string, latitude string, userID 
 
 	geoLocation := &redis.GeoLocation{}
 
-	geoLocation.Name = userID + "/" + userName
+	geoLocation.Name = userID + "/" + userName + "/" + strconv.FormatInt(time.Now().Unix(), 10)
 	geoLocation.Longitude = long
 	geoLocation.Latitude = lat
 
