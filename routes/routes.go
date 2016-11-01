@@ -6,8 +6,6 @@ import (
 	"./userRoutes"
 
 	"github.com/labstack/echo"
-	//"github.com/labstack/echo/engine/standard"
-	//"github.com/labstack/echo/middleware"
 )
 
 //register routes
@@ -20,6 +18,7 @@ func RegisterRoutes(app *echo.Echo) {
 	//user
 	app.GET("/test", userRoutes.HandleTest)
 	app.GET("/user/userGroups", userRoutes.GetGroups)
+	app.GET("/user/groupInvites", userRoutes.GetInvites)
 
 	//groups
 	app.GET("/group/members/:groupID", groupRoutes.GetMembers)
@@ -32,6 +31,6 @@ func RegisterRoutes(app *echo.Echo) {
 
 	//groups
 	app.POST("/group/createGroup", groupRoutes.CreateGroup)
+	app.POST("/group/inviteUser", groupRoutes.InviteToGroup)
 	app.POST("/group/storeMessage/:groupID", groupRoutes.StoreMessage)
-
 }

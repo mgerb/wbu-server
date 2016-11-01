@@ -32,13 +32,11 @@ func CreateGroup(groupName string, userID string, userName string) error {
 	pipe.Set(groupModel.GROUP_ID(groupName), newID, 0)
 
 	//store group hash
-	pipe.HMSet(groupModel.GROUP_HASH(newID), map[string]string{
-		"groupName": groupName,
-		"owner":     userID,
-	})
+	pipe.HMSet(groupModel.GROUP_HASH(newID), groupModel.GROUP_HASH_MAP(groupName, userID))
 
 	pipe.SAdd(groupModel.GROUP_MEMBERS(newID), userID+"/"+userName)
 	pipe.SAdd(userModel.USER_GROUPS(userID), newID+"/"+groupName)
+	pipe.HIncrBy(userModel.USER_HASH(userID), "adminGroupCount", 1)
 
 	_, returnError := pipe.Exec()
 
@@ -71,9 +69,38 @@ func UserIsMember(userID string, userName string, groupID string) bool {
 	}
 }
 
-//TODO-----------------------------------------------------------------
-func InviteToGroup(groupOwnerId string, groupID string, inviteduserID string) error {
-	return errors.New("TODO")
+func InviteToGroup(groupOwnerID string, groupID string, groupName string, invUserID string, invUserName string) error {
+	pipe := db.Client.Pipeline()
+	defer pipe.Close()
+
+	tempOwnerID := pipe.HGet(groupModel.GROUP_HASH(groupID), "owner")
+	tempUserExists := pipe.Exists(userModel.USER_HASH(invUserID))
+
+	_, err := pipe.Exec()
+
+	ownerID, _ := tempOwnerID.Result()
+	userExists, _ := tempUserExists.Result()
+
+	if err != nil {
+		return errors.New("Error 1.")
+	}
+
+	if !userExists {
+		return errors.New("User does not exist.")
+	}
+
+	if ownerID != groupOwnerID {
+		return errors.New("User does not have permission.")
+	}
+
+	addInviteErr := db.Client.SAdd(userModel.USER_GROUP_INVITES(invUserID), groupID+"/"+groupName).Err()
+
+	if addInviteErr != nil {
+		return errors.New("Error adding invite.")
+	}
+
+	return nil
 }
 
+//TODO-----------------------------------------------------------------
 //TODO-----------------------------------------------------------------

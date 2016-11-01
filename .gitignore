@@ -1,3 +1,5 @@
 npm-debug*
 main
 config.json
+tls.key
+tls.crt

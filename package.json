@@ -1,7 +1,9 @@
 {
   "scripts": {
-    "dev": "reflex -s go run main.go",
     "c9": "reflex -e -c reflex.conf",
+    "deploy": "go build ./main.go && ./main -p",
+    "dev": "reflex -s go run main.go",
+    "generate-tls": "sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout ./tls.key -out ./tls.crt",
     "install": "go get"
   }
 }

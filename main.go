@@ -4,8 +4,9 @@ import (
 	"./config"
 	"./db"
 	"./routes"
+
 	"github.com/labstack/echo"
-	"github.com/labstack/echo/engine/standard"
+	"github.com/labstack/echo/engine/fasthttp"
 )
 
 func main() {
@@ -17,5 +18,5 @@ func main() {
 	app := echo.New()
 	routes.RegisterRoutes(app)
 
-	app.Run(standard.New(":" + config.Config.ServerPort))
+	app.Run(fasthttp.WithConfig(config.Config.ServerConfig))
 }

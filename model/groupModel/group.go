@@ -6,7 +6,6 @@ const (
 	grID   = "grID:"   //group name maps to id
 	grHash = "grHash:" //group id maps to hash map for group information
 	grMem  = "grMem:"  //set containing members for each group
-	grInv  = "grInv:"  //set containing members that currently have an invite to a group
 	grMsg  = "grMsg:"  //list containing messages for each group id/username/message/timestamp
 	grGeo  = "grGeo:"  //geo set for store user locations for each group
 )
@@ -31,10 +30,13 @@ func GROUP_MESSAGE(s string) string {
 	return grMsg + s
 }
 
-func GROUP_INVITE(s string) string {
-	return grInv + s
-}
-
 func GROUP_GEO(s string) string {
 	return grGeo + s
+}
+
+func GROUP_HASH_MAP(groupName string, owner string) map[string]string {
+	return map[string]string{
+		"groupName": groupName,
+		"owner":     owner,
+	}
 }
