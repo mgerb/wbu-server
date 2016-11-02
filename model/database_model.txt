@@ -11,6 +11,7 @@ group(
         groupname: string
         owner: userID
         maxmembers: int
+        inviteOnly: bool
         password: hashed(string)
     }
     

@@ -73,13 +73,20 @@ func InviteToGroup(groupOwnerID string, groupID string, groupName string, invUse
 	pipe := db.Client.Pipeline()
 	defer pipe.Close()
 
+	//check if inviter is group owner
 	tempOwnerID := pipe.HGet(groupModel.GROUP_HASH(groupID), "owner")
+
+	//check if user exists
 	tempUserExists := pipe.Exists(userModel.USER_HASH(invUserID))
+
+	//check if user already exists in group
+	tempUserExistsInGroup := pipe.SIsMember(groupModel.GROUP_MEMBERS(groupID), invUserID+"/"+invUserName)
 
 	_, err := pipe.Exec()
 
 	ownerID, _ := tempOwnerID.Result()
 	userExists, _ := tempUserExists.Result()
+	userExistsInGroup, _ := tempUserExistsInGroup.Result()
 
 	if err != nil {
 		return errors.New("Error 1.")
@@ -87,6 +94,10 @@ func InviteToGroup(groupOwnerID string, groupID string, groupName string, invUse
 
 	if !userExists {
 		return errors.New("User does not exist.")
+	}
+
+	if userExistsInGroup {
+		return errors.New("User is already in group.")
 	}
 
 	if ownerID != groupOwnerID {
