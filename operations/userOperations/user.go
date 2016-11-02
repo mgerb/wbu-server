@@ -8,6 +8,7 @@ import (
 
 	"../../config"
 	"../../db"
+	"../../model/groupModel"
 	"../../model/userModel"
 	"../../utils/regex"
 	"github.com/dgrijalva/jwt-go"
@@ -95,8 +96,27 @@ func GetInvites(userID string) ([]string, error) {
 }
 
 //TODO----------------------------------------------------------
-func JoinGroup(userID string) error {
-	return errors.New("TODO")
+func JoinGroup(userID string, userName string, groupID string, groupName string) error {
+
+	userHasInvite := db.Client.SIsMember(userModel.USER_GROUP_INVITES(userID), groupID+"/"+groupName).Val()
+
+	if !userHasInvite {
+		return errors.New("User does not have an invite.")
+	}
+
+	pipe := db.Client.Pipeline()
+	defer pipe.Close()
+
+	pipe.SAdd(groupModel.GROUP_MEMBERS(groupID), userID+"/"+userName)
+	pipe.SRem(userModel.USER_GROUP_INVITES(userID), groupID+"/"+groupName)
+
+	_, err := pipe.Exec()
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func LeaveGroup(userID string, groupid string) error {

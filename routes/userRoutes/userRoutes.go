@@ -48,10 +48,11 @@ func CreateUser(ctx echo.Context) error {
 
 	err := userOperations.CreateUser(userName, password)
 
-	if err == nil {
-		return ctx.JSON(200, map[string]string{"message": "Account Created"})
-	} else {
-		return ctx.JSON(500, map[string]string{"error": err.Error()})
+	switch err {
+	case nil:
+		return ctx.JSON(200, response.Json("Account Created.", response.SUCCESS))
+	default:
+		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
 	}
 }
 
@@ -62,10 +63,11 @@ func Login(ctx echo.Context) error {
 
 	jwt, err := userOperations.Login(userName, password)
 
-	if err == nil {
+	switch err {
+	case nil:
 		return ctx.JSON(200, map[string]string{"token": jwt})
-	} else {
-		return ctx.JSON(500, map[string]string{"error": err.Error()})
+	default:
+		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
 	}
 }
 
@@ -74,10 +76,11 @@ func GetGroups(ctx echo.Context) error {
 
 	groups, err := userOperations.GetGroups(userID)
 
-	if err == nil {
+	switch err {
+	case nil:
 		return ctx.JSON(200, map[string]interface{}{"groups": groups})
-	} else {
-		return ctx.JSON(500, response.Json("Unable to get groups.", response.INTERNAL_ERROR))
+	default:
+		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
 	}
 }
 
@@ -86,9 +89,29 @@ func GetInvites(ctx echo.Context) error {
 
 	invites, err := userOperations.GetInvites(userID)
 
-	if err == nil {
+	switch err {
+	case nil:
 		return ctx.JSON(200, map[string]interface{}{"invites": invites})
-	} else {
-		return ctx.JSON(500, response.Json("Unable to get invites.", response.INTERNAL_ERROR))
+
+	default:
+		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
+	}
+}
+
+func JoinGroup(ctx echo.Context) error {
+	userID := ctx.Get("userID").(string)
+	userName := ctx.Get("userName").(string)
+
+	groupID := ctx.FormValue("groupID")
+	groupName := ctx.FormValue("groupName")
+
+	err := userOperations.JoinGroup(userID, userName, groupID, groupName)
+
+	switch err {
+	case nil:
+		return ctx.JSON(200, response.Json("Joined group.", response.SUCCESS))
+
+	default:
+		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
 	}
 }

@@ -1,12 +1,12 @@
 package middleware
 
 import (
-	"log"
-
 	"../../config"
+	"../../utils/response"
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
+	"log"
 )
 
 //ApplyMiddleware - applies middleware to iris framework
@@ -22,36 +22,40 @@ func ApplyMiddleware(app *echo.Echo) {
 //define custom JWT middleware
 func checkJWT(next echo.HandlerFunc) echo.HandlerFunc {
 
+	//return handler function
 	return func(ctx echo.Context) error {
 		path := ctx.Request().URL().Path()
 
-		if path == "/user/login" || path == "/user/createUser" {
+		//routes to skip authentication
+		switch path {
+		case "/user/login",
+			"/user/createUser":
 			return next(ctx)
-		} else {
-			//get Authorization header - jwt token
-			authToken := ctx.Request().Header().Get("Authorization")
+		}
 
-			//parse the token
-			//TODO - FIX ERROR HANDLING HERE
-			token, err := jwt.Parse(authToken, func(token *jwt.Token) (interface{}, error) {
-				return []byte(config.Config.TokenSecret), nil
-			})
+		//get Authorization header - jwt token
+		authToken := ctx.Request().Header().Get("Authorization")
 
-			//check if actual token
-			if err != nil {
-				log.Println(err.Error())
-				return ctx.JSON(500, map[string]string{"message": "Invalid Token"})
-			} else {
-				//get the claims from token - userName and id
-				if claims, ok := token.Claims.(jwt.MapClaims); token.Valid && ok {
-					ctx.Set("userName", claims["userName"].(string))
-					ctx.Set("userID", claims["userID"].(string))
-					return next(ctx)
-				} else {
-					log.Println(err.Error())
-					return ctx.JSON(500, map[string]string{"message": "Invalid Authentication"})
-				}
+		//parse the token
+		//TODO - FIX ERROR HANDLING HERE
+		token, err := jwt.Parse(authToken, func(token *jwt.Token) (interface{}, error) {
+			return []byte(config.Config.TokenSecret), nil
+		})
+
+		switch err {
+		case nil:
+			if claims, ok := token.Claims.(jwt.MapClaims); token.Valid && ok {
+				ctx.Set("userName", claims["userName"].(string))
+				ctx.Set("userID", claims["userID"].(string))
+				return next(ctx)
 			}
+			return ctx.JSON(500, response.Json("Invalid authentication.", response.INTERNAL_ERROR))
+
+		default:
+			log.Println(err.Error())
+			return ctx.JSON(500, response.Json("Invalid token.", response.INTERNAL_ERROR))
+
 		}
 	}
+
 }

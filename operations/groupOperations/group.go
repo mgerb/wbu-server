@@ -62,9 +62,10 @@ func GetMembers(userID string, userName string, groupID string) ([]string, error
 func UserIsMember(userID string, userName string, groupID string) bool {
 	isMember, err := db.Client.SIsMember(groupModel.GROUP_MEMBERS(groupID), userID+"/"+userName).Result()
 
-	if err == nil {
+	switch err {
+	case nil:
 		return isMember
-	} else {
+	default:
 		return false
 	}
 }
@@ -107,7 +108,7 @@ func InviteToGroup(groupOwnerID string, groupID string, groupName string, invUse
 	addInviteErr := db.Client.SAdd(userModel.USER_GROUP_INVITES(invUserID), groupID+"/"+groupName).Err()
 
 	if addInviteErr != nil {
-		return errors.New("Error adding invite.")
+		return addInviteErr
 	}
 
 	return nil

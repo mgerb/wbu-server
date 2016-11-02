@@ -10,13 +10,15 @@ import (
 func CreateGroup(ctx echo.Context) error {
 	userID := ctx.Get("userID").(string)
 	userName := ctx.Get("userName").(string)
+
 	groupName := ctx.FormValue("groupName")
 
 	err := groupOperations.CreateGroup(groupName, userID, userName)
 
-	if err == nil {
+	switch err {
+	case nil:
 		return ctx.JSON(200, response.Json("Group created.", response.SUCCESS))
-	} else {
+	default:
 		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
 	}
 }
@@ -24,13 +26,15 @@ func CreateGroup(ctx echo.Context) error {
 func GetMembers(ctx echo.Context) error {
 	userID := ctx.Get("userID").(string)
 	userName := ctx.Get("userName").(string)
+
 	groupID := ctx.Param("groupID")
 
 	members, err := groupOperations.GetMembers(userID, userName, groupID)
 
-	if err == nil {
+	switch err {
+	case nil:
 		return ctx.JSON(200, map[string]interface{}{"members": members})
-	} else {
+	default:
 		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
 	}
 }
@@ -41,13 +45,15 @@ func StoreMessage(ctx echo.Context) error {
 	userName := ctx.Get("userName").(string)
 
 	groupID := ctx.Param("groupID")
+
 	message := ctx.FormValue("message")
 
 	err := groupOperations.StoreMessage(groupID, userID, userName, message)
 
-	if err == nil {
+	switch err {
+	case nil:
 		return ctx.JSON(200, response.Json("Message received.", response.SUCCESS))
-	} else {
+	default:
 		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
 	}
 }
@@ -56,19 +62,22 @@ func StoreMessage(ctx echo.Context) error {
 func GetMessages(ctx echo.Context) error {
 	userID := ctx.Get("userID").(string)
 	userName := ctx.Get("userName").(string)
+
 	groupID := ctx.Param("groupID")
 
 	messages, err := groupOperations.GetMessages(userID, userName, groupID)
 
-	if err == nil {
+	switch err {
+	case nil:
 		return ctx.JSON(200, map[string]interface{}{"messages": messages})
-	} else {
+	default:
 		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
 	}
 }
 
 func InviteToGroup(ctx echo.Context) error {
 	userID := ctx.Get("userID").(string)
+
 	groupID := ctx.FormValue("groupID")
 	groupName := ctx.FormValue("groupName")
 	invUserID := ctx.FormValue("invUserID")
@@ -76,9 +85,10 @@ func InviteToGroup(ctx echo.Context) error {
 
 	err := groupOperations.InviteToGroup(userID, groupID, groupName, invUserID, invUserName)
 
-	if err == nil {
-		return ctx.JSON(200, map[string]interface{}{"message": "success"})
-	} else {
+	switch err {
+	case nil:
+		return ctx.JSON(200, response.Json("User invited.", response.SUCCESS))
+	default:
 		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
 	}
 }

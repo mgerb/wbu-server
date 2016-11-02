@@ -2,8 +2,8 @@ package response
 
 //error types
 const (
-	INTERNAL_ERROR = 1
-	SUCCESS        = 2
+	INTERNAL_ERROR = 2
+	SUCCESS        = 1
 	//...
 	//...
 )
