@@ -1,12 +1,13 @@
 package middleware
 
 import (
+	"log"
+
 	"../../config"
 	"../../utils/response"
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
-	"log"
 )
 
 //ApplyMiddleware - applies middleware to iris framework
@@ -29,7 +30,8 @@ func checkJWT(next echo.HandlerFunc) echo.HandlerFunc {
 		//routes to skip authentication
 		switch path {
 		case "/user/login",
-			"/user/createUser":
+			"/user/createUser",
+			"/user/loginFacebook":
 			return next(ctx)
 		}
 
@@ -45,8 +47,18 @@ func checkJWT(next echo.HandlerFunc) echo.HandlerFunc {
 		switch err {
 		case nil:
 			if claims, ok := token.Claims.(jwt.MapClaims); token.Valid && ok {
-				ctx.Set("userName", claims["userName"].(string))
-				ctx.Set("userID", claims["userID"].(string))
+				if email, ok_email := claims["email"]; ok_email {
+					ctx.Set("email", email.(string))
+				}
+
+				if userID, ok_userID := claims["userID"]; ok_userID {
+					ctx.Set("userID", userID.(string))
+				}
+
+				if name, ok_name := claims["name"]; ok_name {
+					ctx.Set("name", name.(string))
+				}
+
 				return next(ctx)
 			}
 			return ctx.JSON(500, response.Json("Invalid authentication.", response.INTERNAL_ERROR))

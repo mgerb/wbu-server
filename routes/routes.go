@@ -26,10 +26,11 @@ func RegisterRoutes(app *echo.Echo) {
 
 	//POST---------------------------------------------------
 	//user
-	app.POST("/user/createUser", userRoutes.CreateUser)
-	app.POST("/user/login", userRoutes.Login)
+	//app.POST("/user/createUser", userRoutes.CreateUser)
+	//app.POST("/user/login", userRoutes.Login)
+	app.POST("/user/loginFacebook", userRoutes.LoginFacebook)
 	app.POST("/user/joinGroup", userRoutes.JoinGroup)
-	
+
 	//groups
 	app.POST("/group/createGroup", groupRoutes.CreateGroup)
 	app.POST("/group/inviteUser", groupRoutes.InviteToGroup)

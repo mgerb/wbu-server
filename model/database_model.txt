@@ -4,7 +4,7 @@ group(
     grKeys => int                       //store for group id's
     
     -key pair
-    grID:<groupName> => int             //takes in group name and returns group id
+    groupID => {groupName:id}            //takes in group name and returns group id
     
     -hash
     grHash:<groupID> => {               //group object that contains various information.. tbd
@@ -15,11 +15,11 @@ group(
         password: hashed(string)
     }
     
-    -set
-    grMem:<groupID> => [...userID/username]      //array of userID's
+    -hash
+    grMem:<groupID> => [...{userID:username}]      //array of userID's
     
-    -list of messages 
-    grMsg:<groupID> => [<userID>:<time>:<message>]
+    -hash of group messages 
+    grMsg:<groupID> => [...{userID:<time>/<message>}]  //hash of messages for each group
     
     -geoset of group locations
     grGeo:<groupID, long, lat, userID/userName/timestamp> => 
@@ -30,7 +30,8 @@ user(
     
     uKeys => int                      //store for user id's
     
-    uID:<username> => int             //takes in username and returns userID
+    --hash of user emails to id
+    userID => {email: id}             //userID is a email:id hash map
     
     uHash:<userID> => {               //user object
         username: string
@@ -41,9 +42,9 @@ user(
         facebookToken: string
     }
     
-    -set of user groups
-    uGrps:<userID> => [...groupID/groupName]  //returns array of groupID's / groupNames
+    -hash of user groups
+    uGrps:<userID> => [...{groupID:groupName}]     //returns array of groupID's / groupNames
     
-    -set of user group invites
-    uGrpInv:<userID> => [...groupID/groupName] //contains set of group id's that user has pending invites to
+    -hash of user group invites
+    uGrpInv:<userID> => [...{groupID:groupName}]   //contains set of group id's that user has pending invites to
 )

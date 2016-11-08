@@ -3,3 +3,6 @@
 ## flags
 
 - -p production mode
+
+
+TODO: change group operations over to hashes

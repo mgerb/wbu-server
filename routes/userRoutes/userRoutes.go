@@ -1,25 +1,28 @@
 package userRoutes
 
 import (
-	"../../operations/groupOperations"
 	"../../operations/userOperations"
-
 	"../../utils/response"
 	"github.com/labstack/echo"
 )
 
 //HandleTest - test function for random things
 func HandleTest(ctx echo.Context) error {
-	err := groupOperations.StoreGeoLocation("groupID", "test", "13.4", "userID", "userName")
+	/*
+		err := groupOperations.StoreGeoLocation("groupID", "test", "13.4", "userID", "userName")
 
-	message := "success"
-	if err != nil {
-		message = err.Error()
-	}
+		message := "success"
+		if err != nil {
+			message = err.Error()
+		}
 
-	return ctx.JSON(200, map[string]string{"message": message})
+		return ctx.JSON(200, map[string]string{"message": message})
+	*/
+
+	return ctx.JSON(500, "test works")
 }
 
+/*
 //CreateUser - create user account - currently takes in userName and password
 func CreateUser(ctx echo.Context) error {
 	userName := ctx.FormValue("userName")
@@ -41,6 +44,20 @@ func Login(ctx echo.Context) error {
 	password := ctx.FormValue("password")
 
 	jwt, err := userOperations.Login(userName, password)
+
+	switch err {
+	case nil:
+		return ctx.JSON(200, map[string]string{"token": jwt})
+	default:
+		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
+	}
+}
+*/
+
+func LoginFacebook(ctx echo.Context) error {
+	accessToken := ctx.FormValue("accessToken")
+
+	jwt, err := userOperations.LoginFacebook(accessToken)
 
 	switch err {
 	case nil:
@@ -79,12 +96,10 @@ func GetInvites(ctx echo.Context) error {
 
 func JoinGroup(ctx echo.Context) error {
 	userID := ctx.Get("userID").(string)
-	userName := ctx.Get("userName").(string)
-
+	name := ctx.Get("name").(string)
 	groupID := ctx.FormValue("groupID")
-	groupName := ctx.FormValue("groupName")
 
-	err := userOperations.JoinGroup(userID, userName, groupID, groupName)
+	err := userOperations.JoinGroup(userID, name, groupID)
 
 	switch err {
 	case nil:
