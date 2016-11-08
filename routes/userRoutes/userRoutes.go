@@ -10,27 +10,6 @@ import (
 
 //HandleTest - test function for random things
 func HandleTest(ctx echo.Context) error {
-	//response := groupOperations.GetGroupMembers("1")
-	//res, _ := json.Marshal(response)
-	/*
-		pipe := db.Client.Pipeline()
-		defer pipe.Close()
-
-		for i := 0; i < 1000000; i++ {
-			s := strconv.Itoa(i)
-			pipe.HMSet("test"+s, map[string]string{"test1": s, "test2": s})
-			log.Println("group created " + s)
-		}
-		pipe.Exec()
-	*/
-	/*
-		err := groupOperations.StoreMessage("groupid", "userid", "userName", "message")
-		message := "success"
-		if err != nil {
-			message = "error"
-		}
-	*/
-
 	err := groupOperations.StoreGeoLocation("groupID", "test", "13.4", "userID", "userName")
 
 	message := "success"

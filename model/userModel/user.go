@@ -34,7 +34,9 @@ func USER_HASH_MAP(userName string, password string, adminGroupCount string) map
 	return map[string]string{
 		"userName":        userName,
 		"password":        password,
-		"email":           "email",
+		"email":           "string",
 		"adminGroupCount": adminGroupCount,
+		"fcmToken":        "string",
+		"facebookToken":   "string",
 	}
 }

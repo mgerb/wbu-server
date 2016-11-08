@@ -83,26 +83,37 @@ func InviteToGroup(groupOwnerID string, groupID string, groupName string, invUse
 	//check if user already exists in group
 	tempUserExistsInGroup := pipe.SIsMember(groupModel.GROUP_MEMBERS(groupID), invUserID+"/"+invUserName)
 
-	_, err := pipe.Exec()
+	//check if user already has an invite to the group that is pending
+	tempUserHasPendingInvite := pipe.SIsMember(userModel.USER_GROUP_INVITES(invUserID), groupID+"/"+groupName)
 
-	ownerID, _ := tempOwnerID.Result()
-	userExists, _ := tempUserExists.Result()
-	userExistsInGroup, _ := tempUserExistsInGroup.Result()
+	_, err := pipe.Exec()
 
 	if err != nil {
 		return errors.New("Error 1.")
 	}
 
+	ownerID := tempOwnerID.Val()
+
+	if ownerID != groupOwnerID {
+		return errors.New("User does not have permission.")
+	}
+
+	userExists := tempUserExists.Val()
+
 	if !userExists {
 		return errors.New("User does not exist.")
 	}
 
-	if userExistsInGroup {
-		return errors.New("User is already in group.")
+	userHasPendingInvite := tempUserHasPendingInvite.Val()
+
+	if userHasPendingInvite {
+		return errors.New("User has pending invite.")
 	}
 
-	if ownerID != groupOwnerID {
-		return errors.New("User does not have permission.")
+	userExistsInGroup := tempUserExistsInGroup.Val()
+
+	if userExistsInGroup {
+		return errors.New("User is already in group.")
 	}
 
 	addInviteErr := db.Client.SAdd(userModel.USER_GROUP_INVITES(invUserID), groupID+"/"+groupName).Err()

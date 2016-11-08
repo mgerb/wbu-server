@@ -32,13 +32,17 @@ func StoreMessage(groupID string, userID string, userName string, message string
 
 	_, err := pipe.Exec()
 
+	if err != nil {
+		return errors.New("Error storing message.")
+	}
+
 	return err
 }
 
 func GetMessages(userID string, userName string, groupID string) ([]string, error) {
 
 	//DO VALIDATION
-	//check if user exists in group before gettings messages
+	//check if user exists in group before getting messages
 	if !UserIsMember(userID, userName, groupID) {
 		return []string{}, errors.New("User is not in group.")
 	}

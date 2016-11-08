@@ -36,8 +36,9 @@ user(
         username: string
         password: hashed(password)
         email:    string
-        apnsToken: string             //apple push notification service token
-        gcmToken: string              //google cloud messaging token
+        adminGroupCount: string
+        fcmToken: string
+        facebookToken: string
     }
     
     -set of user groups
