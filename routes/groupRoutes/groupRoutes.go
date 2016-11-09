@@ -39,11 +39,10 @@ func GetMembers(ctx echo.Context) error {
 //StoreMessage - store a message in a group
 func StoreMessage(ctx echo.Context) error {
 	userID := ctx.Get("userID").(string)
-	fullName := ctx.Get("fullName").(string)
-	groupID := ctx.Param("groupID")
+	groupID := ctx.FormValue("groupID")
 	message := ctx.FormValue("message")
 
-	err := groupOperations.StoreMessage(groupID, userID, fullName, message)
+	err := groupOperations.StoreMessage(groupID, userID, message)
 
 	switch err {
 	case nil:
@@ -68,13 +67,12 @@ func GetMessages(ctx echo.Context) error {
 	}
 }
 
-func InviteToGroup(ctx echo.Context) error {
+func InviteUser(ctx echo.Context) error {
 	userID := ctx.Get("userID").(string)
 	groupID := ctx.FormValue("groupID")
-	groupName := ctx.FormValue("groupName")
 	invUserID := ctx.FormValue("invUserID")
 
-	err := groupOperations.InviteToGroup(userID, groupID, groupName, invUserID)
+	err := groupOperations.InviteToGroup(userID, groupID, invUserID)
 
 	switch err {
 	case nil:

@@ -15,5 +15,4 @@ func Json(message string, statusCode int) map[string]interface{} {
 		"status":  statusCode,
 		"message": string(message),
 	}
-
 }

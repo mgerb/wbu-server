@@ -5,7 +5,7 @@ import (
 
 	"../../config"
 	"../../utils/response"
-	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 )
@@ -47,16 +47,17 @@ func checkJWT(next echo.HandlerFunc) echo.HandlerFunc {
 		switch err {
 		case nil:
 			if claims, ok := token.Claims.(jwt.MapClaims); token.Valid && ok {
-				if email, ok_email := claims["email"]; ok_email {
+
+				email, ok_email := claims["email"]
+				userID, ok_userID := claims["userID"]
+				fullName, ok_fullName := claims["fullName"]
+
+				if ok_email && ok_userID && ok_fullName {
 					ctx.Set("email", email.(string))
-				}
-
-				if userID, ok_userID := claims["userID"]; ok_userID {
 					ctx.Set("userID", userID.(string))
-				}
-
-				if fullName, ok_fullName := claims["fullName"]; ok_fullName {
 					ctx.Set("fullName", fullName.(string))
+				} else {
+					return ctx.JSON(500, response.Json("Token claims error.", response.INTERNAL_ERROR))
 				}
 
 				return next(ctx)

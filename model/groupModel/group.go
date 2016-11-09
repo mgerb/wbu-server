@@ -3,9 +3,9 @@ package groupModel
 const (
 	grKeys = "grKeys" //increments on each new group
 
-	groupID = "groupID" //group name maps to id
-	grHash  = "grHash:" //group id maps to hash map for group information
-	grMem   = "grMem:"  //set containing members for each group
+	groupID = "groupID" //hash - group name maps to id
+	grHash  = "grHash:" //hash - group id maps to hash map for group information
+	grMem   = "grMem:"  //hash - containing members for each group
 	grMsg   = "grMsg:"  //list containing messages for each group id/username/message/timestamp
 	grGeo   = "grGeo:"  //geo set for store user locations for each group
 )

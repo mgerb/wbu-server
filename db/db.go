@@ -8,7 +8,8 @@ import (
 
 var Client *redis.Client
 
-func Configure(address string, password string) {
+func Connect(address string, password string) {
+
 	options := &redis.Options{
 		Addr:     address,
 		Password: password,

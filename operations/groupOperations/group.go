@@ -57,12 +57,12 @@ func GetMembers(userID string, groupID string) (map[string]string, error) {
 	return db.Client.HGetAll(groupModel.GROUP_MEMBERS(groupID)).Result()
 }
 
-func InviteToGroup(groupOwnerID string, groupID string, groupName string, invUserID string) error {
+func InviteToGroup(groupOwnerID string, groupID string, invUserID string) error {
 	pipe := db.Client.Pipeline()
 	defer pipe.Close()
 
-	//check if inviter is group owner
-	tempOwnerID := pipe.HGet(groupModel.GROUP_HASH(groupID), "owner")
+	//get group information
+	groupInfo := pipe.HGetAll(groupModel.GROUP_HASH(groupID))
 
 	//check if user exists
 	tempUserExists := pipe.Exists(userModel.USER_HASH(invUserID))
@@ -75,13 +75,14 @@ func InviteToGroup(groupOwnerID string, groupID string, groupName string, invUse
 
 	_, err := pipe.Exec()
 
+	storedGroupOwnerID := groupInfo.Val()["owner"]
+	storedGroupName := groupInfo.Val()["groupName"]
+
 	if err != nil {
 		return errors.New("Error inviting user.")
 	}
 
-	ownerID := tempOwnerID.Val()
-
-	if ownerID != groupOwnerID {
+	if groupOwnerID != storedGroupOwnerID {
 		return errors.New("User does not have permission.")
 	}
 
@@ -103,7 +104,7 @@ func InviteToGroup(groupOwnerID string, groupID string, groupName string, invUse
 		return errors.New("User is already in group.")
 	}
 
-	addInviteErr := db.Client.HSet(userModel.USER_GROUP_INVITES(invUserID), groupID, groupName).Err()
+	addInviteErr := db.Client.HSet(userModel.USER_GROUP_INVITES(invUserID), groupID, storedGroupName).Err()
 
 	if addInviteErr != nil {
 		return addInviteErr

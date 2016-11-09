@@ -1,24 +1,16 @@
 package userOperations
 
 import (
-	"errors"
-	"regexp"
-	"strconv"
-	"time"
-
-	"../../config"
 	"../../db"
 	"../../model/groupModel"
 	"../../model/userModel"
 	"../../utils/regex"
+	"../../utils/tokens"
 	"../fb"
-	"github.com/dgrijalva/jwt-go"
+	"errors"
 	"golang.org/x/crypto/bcrypt"
-)
-
-const (
-	//expiration time for JWT
-	expirationTime int64 = 30 * 24 * 60 * 60
+	"regexp"
+	"strconv"
 )
 
 //CreateUser - store userName/password in hash
@@ -82,21 +74,7 @@ func Login(email string, password string) (string, error) {
 		return "", errors.New("Invalid password.")
 	}
 
-	//if user has valid login - generate jwt
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"email":    email,
-		"userID":   userID,
-		"fullName": fullName,
-		"exp":      time.Now().Unix() + expirationTime,
-	})
-
-	tokenString, tokenError := token.SignedString([]byte(config.Config.TokenSecret))
-
-	if tokenError != nil {
-		return "", errors.New("Token error.")
-	}
-
-	return tokenString, nil
+	return tokens.GetJWT(email, userID, fullName)
 }
 
 func LoginFacebook(accessToken string) (string, error) {
@@ -134,22 +112,7 @@ func LoginFacebook(accessToken string) (string, error) {
 		}
 	}
 
-	//log user in
-	//if user has valid login - generate jwt
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"email":    email,
-		"userID":   userID,
-		"fullName": fullName,
-		"exp":      time.Now().Unix() + expirationTime,
-	})
-
-	tokenString, tokenError := token.SignedString([]byte(config.Config.TokenSecret))
-
-	if tokenError != nil {
-		return "", errors.New("Token error.")
-	}
-
-	return tokenString, nil
+	return tokens.GetJWT(email, userID, fullName)
 }
 
 //GetUserGroups - get all the groups the user exists in
@@ -162,24 +125,37 @@ func GetInvites(userID string) (map[string]string, error) {
 }
 
 //TODO----------------------------------------------------------
-func JoinGroup(userID string, fullName string, groupID string) error {
-
-	userHasInvite := db.Client.HExists(userModel.USER_GROUP_INVITES(userID), groupID).Val()
-
-	if !userHasInvite {
-		return errors.New("User does not have an invite.")
-	}
+func JoinGroup(userID string, groupID string) error {
 
 	pipe := db.Client.Pipeline()
 	defer pipe.Close()
 
+	userInfo := pipe.HGetAll(userModel.USER_HASH(userID))
+	groupInfo := pipe.HGetAll(groupModel.GROUP_HASH(groupID))
+
+	userHasInvite := pipe.HExists(userModel.USER_GROUP_INVITES(userID), groupID)
+
+	_, err_pipe1 := pipe.Exec()
+
+	if err_pipe1 != nil {
+		return err_pipe1
+	}
+
+	if !userHasInvite.Val() {
+		return errors.New("User does not have an invite.")
+	}
+
+	fullName := userInfo.Val()["fullName"]
+	groupName := groupInfo.Val()["groupName"]
+
 	pipe.HSet(groupModel.GROUP_MEMBERS(groupID), userID, fullName)
+	pipe.HSet(userModel.USER_GROUPS(userID), groupID, groupName)
 	pipe.HDel(userModel.USER_GROUP_INVITES(userID), groupID)
 
-	_, err := pipe.Exec()
+	_, err_pipe2 := pipe.Exec()
 
-	if err != nil {
-		return err
+	if err_pipe2 != nil {
+		return err_pipe2
 	}
 
 	return nil

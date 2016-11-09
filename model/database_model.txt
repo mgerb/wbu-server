@@ -18,8 +18,8 @@ group(
     -hash
     grMem:<groupID> => [...{userID:username}]      //array of userID's
     
-    -hash of group messages 
-    grMsg:<groupID> => [...{userID:<time>/<message>}]  //hash of messages for each group
+    -list of group messages 
+    grMsg:<groupID> => [userID/time/message]  //list of messages for each group
     
     -geoset of group locations
     grGeo:<groupID, long, lat, userID/userName/timestamp> => 

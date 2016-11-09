@@ -10,10 +10,12 @@ import (
 )
 
 func main() {
-	config.ParseFlags()
-	config.ReadConfig()
 
-	db.Configure(config.Config.DatabaseAddress, config.Config.DatabasePassword)
+	//read config files/flags
+	config.Init()
+
+	//connect to database
+	db.Connect(config.Config.DatabaseAddress, config.Config.DatabasePassword)
 
 	app := echo.New()
 	routes.RegisterRoutes(app)

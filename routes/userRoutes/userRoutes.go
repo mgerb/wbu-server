@@ -97,10 +97,9 @@ func GetInvites(ctx echo.Context) error {
 
 func JoinGroup(ctx echo.Context) error {
 	userID := ctx.Get("userID").(string)
-	fullName := ctx.Get("fullName").(string)
 	groupID := ctx.FormValue("groupID")
 
-	err := userOperations.JoinGroup(userID, fullName, groupID)
+	err := userOperations.JoinGroup(userID, groupID)
 
 	switch err {
 	case nil:

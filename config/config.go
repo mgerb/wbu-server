@@ -25,7 +25,12 @@ type configStruct struct {
 	TokenSecret      string        `json:"TokenSecret"`
 }
 
-func ReadConfig() {
+func Init() {
+	readConfigFile()
+	parseFlags()
+}
+
+func readConfigFile() {
 
 	log.Println("Reading config file...")
 
@@ -46,7 +51,7 @@ func ReadConfig() {
 
 }
 
-func ParseFlags() {
+func parseFlags() {
 	Flags.Production = false
 
 	boolPtr := flag.Bool("p", false, "Production mode")
