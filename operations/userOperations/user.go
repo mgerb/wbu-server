@@ -92,7 +92,7 @@ func LoginFacebook(accessToken string) (string, error) {
 	}
 
 	email := response["email"].(string)
-	name := response["name"].(string)
+	usersName := response["name"].(string)
 	facebookID := response["id"].(string)
 
 	userID, exists_err := db.Client.HGet(userModel.USER_ID(), email).Result()
@@ -113,7 +113,7 @@ func LoginFacebook(accessToken string) (string, error) {
 		pipe.HSet(userModel.USER_ID(), email, userID)
 
 		//set user object in redis
-		pipe.HMSet(userModel.USER_HASH(userID), userModel.USER_HASH_MAP("", "", "0", name, email, facebookID))
+		pipe.HMSet(userModel.USER_HASH(userID), userModel.USER_HASH_MAP("", "", "0", usersName, email, facebookID))
 
 		_, err_pipe := pipe.Exec()
 
@@ -125,10 +125,10 @@ func LoginFacebook(accessToken string) (string, error) {
 	//log user in
 	//if user has valid login - generate jwt
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"email":  email,
-		"userID": userID,
-		"name":   name,
-		"exp":    time.Now().Unix() + expirationTime,
+		"email":     email,
+		"userID":    userID,
+		"usersName": usersName,
+		"exp":       time.Now().Unix() + expirationTime,
 	})
 
 	tokenString, tokenError := token.SignedString([]byte(config.Config.TokenSecret))

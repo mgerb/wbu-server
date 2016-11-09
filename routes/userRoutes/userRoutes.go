@@ -55,8 +55,10 @@ func Login(ctx echo.Context) error {
 */
 
 func LoginFacebook(ctx echo.Context) error {
+	//facebook access token
 	accessToken := ctx.FormValue("accessToken")
 
+	//create new jwt for user authentication to this server
 	jwt, err := userOperations.LoginFacebook(accessToken)
 
 	switch err {
@@ -74,7 +76,7 @@ func GetGroups(ctx echo.Context) error {
 
 	switch err {
 	case nil:
-		return ctx.JSON(200, map[string]interface{}{"groups": groups})
+		return ctx.JSON(200, groups)
 	default:
 		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
 	}
@@ -87,7 +89,7 @@ func GetInvites(ctx echo.Context) error {
 
 	switch err {
 	case nil:
-		return ctx.JSON(200, map[string]interface{}{"invites": invites})
+		return ctx.JSON(200, invites)
 
 	default:
 		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))

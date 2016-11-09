@@ -11,15 +11,16 @@ import (
 )
 
 //CreateGroup - store userName/password in hash
-func CreateGroup(groupName string, userID string, userName string) error {
+func CreateGroup(groupName string, userID string, usersName string) error {
 
 	//DO VALIDATION
 	if !regexp.MustCompile(regex.GROUP_NAME).MatchString(groupName) {
 		return errors.New("Invalid group name.")
 	}
 
-	_, err := GetGroupID(groupName)
-	if err == nil {
+	groupExists := db.Client.HExists(groupModel.GROUP_ID(), groupName).Val()
+
+	if !groupExists {
 		return errors.New("Group already exists.")
 	}
 
@@ -29,13 +30,13 @@ func CreateGroup(groupName string, userID string, userName string) error {
 	pipe := db.Client.Pipeline()
 	defer pipe.Close()
 
-	pipe.Set(groupModel.GROUP_ID(groupName), newID, 0)
+	pipe.HSet(groupModel.GROUP_ID(), groupName, newID)
 
 	//store group hash
 	pipe.HMSet(groupModel.GROUP_HASH(newID), groupModel.GROUP_HASH_MAP(groupName, userID))
 
-	pipe.SAdd(groupModel.GROUP_MEMBERS(newID), userID+"/"+userName)
-	pipe.SAdd(userModel.USER_GROUPS(userID), newID+"/"+groupName)
+	pipe.HSet(groupModel.GROUP_MEMBERS(newID), userID, usersName)
+	pipe.HSet(userModel.USER_GROUPS(userID), newID, groupName)
 	pipe.HIncrBy(userModel.USER_HASH(userID), "adminGroupCount", 1)
 
 	_, returnError := pipe.Exec()
@@ -43,34 +44,19 @@ func CreateGroup(groupName string, userID string, userName string) error {
 	return returnError
 }
 
-//GetGroupID - get the group id - check if group exists
-func GetGroupID(groupName string) (string, error) {
-	return db.Client.Get(groupModel.GROUP_ID(groupName)).Result()
-}
-
 //GetGroupMembers - returns string array of group members - userID/userName
-func GetMembers(userID string, userName string, groupID string) ([]string, error) {
+func GetMembers(userID string, groupID string) (map[string]string, error) {
 
-	if !UserIsMember(userID, userName, groupID) {
-		return []string{}, errors.New("You are not a member of this group.")
+	userIsMember := db.Client.HExists(groupModel.GROUP_MEMBERS(groupID), userID).Val()
+
+	if !userIsMember {
+		return map[string]string{}, errors.New("You are not a member of this group")
 	}
 
-	return db.Client.SMembers(groupModel.GROUP_MEMBERS(groupID)).Result()
+	return db.Client.HGetAll(groupModel.GROUP_MEMBERS(groupID)).Result()
 }
 
-//UserIsMember - returns true if user is member
-func UserIsMember(userID string, userName string, groupID string) bool {
-	isMember, err := db.Client.SIsMember(groupModel.GROUP_MEMBERS(groupID), userID+"/"+userName).Result()
-
-	switch err {
-	case nil:
-		return isMember
-	default:
-		return false
-	}
-}
-
-func InviteToGroup(groupOwnerID string, groupID string, groupName string, invUserID string, invUserName string) error {
+func InviteToGroup(groupOwnerID string, groupID string, groupName string, invUserID string) error {
 	pipe := db.Client.Pipeline()
 	defer pipe.Close()
 
@@ -81,15 +67,15 @@ func InviteToGroup(groupOwnerID string, groupID string, groupName string, invUse
 	tempUserExists := pipe.Exists(userModel.USER_HASH(invUserID))
 
 	//check if user already exists in group
-	tempUserExistsInGroup := pipe.SIsMember(groupModel.GROUP_MEMBERS(groupID), invUserID+"/"+invUserName)
+	tempUserExistsInGroup := pipe.HExists(groupModel.GROUP_MEMBERS(groupID), invUserID)
 
 	//check if user already has an invite to the group that is pending
-	tempUserHasPendingInvite := pipe.SIsMember(userModel.USER_GROUP_INVITES(invUserID), groupID+"/"+groupName)
+	tempUserHasPendingInvite := pipe.HExists(userModel.USER_GROUP_INVITES(invUserID), groupID)
 
 	_, err := pipe.Exec()
 
 	if err != nil {
-		return errors.New("Error 1.")
+		return errors.New("Error inviting user.")
 	}
 
 	ownerID := tempOwnerID.Val()
@@ -116,7 +102,7 @@ func InviteToGroup(groupOwnerID string, groupID string, groupName string, invUse
 		return errors.New("User is already in group.")
 	}
 
-	addInviteErr := db.Client.SAdd(userModel.USER_GROUP_INVITES(invUserID), groupID+"/"+groupName).Err()
+	addInviteErr := db.Client.HSet(userModel.USER_GROUP_INVITES(invUserID), groupID, groupName).Err()
 
 	if addInviteErr != nil {
 		return addInviteErr

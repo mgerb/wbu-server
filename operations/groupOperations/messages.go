@@ -19,9 +19,11 @@ func StoreMessage(groupID string, userID string, userName string, message string
 	if len(message) > 150 || len(message) == 0 {
 		return errors.New("Invalid message length.")
 	}
-	//check if user exists in group before storing message
-	if !UserIsMember(userID, userName, groupID) {
-		return errors.New("User is not in group.")
+
+	userIsMember := db.Client.HExists(groupModel.GROUP_MEMBERS(groupID), userID).Val()
+
+	if !userIsMember {
+		return errors.New("You are not a member of this group")
 	}
 
 	pipe := db.Client.Pipeline()
@@ -42,9 +44,10 @@ func StoreMessage(groupID string, userID string, userName string, message string
 func GetMessages(userID string, userName string, groupID string) ([]string, error) {
 
 	//DO VALIDATION
-	//check if user exists in group before getting messages
-	if !UserIsMember(userID, userName, groupID) {
-		return []string{}, errors.New("User is not in group.")
+	userIsMember := db.Client.HExists(groupModel.GROUP_MEMBERS(groupID), userID).Val()
+
+	if !userIsMember {
+		return []string{}, errors.New("You are not a member of this group")
 	}
 
 	return db.Client.LRange(groupModel.GROUP_MESSAGE(groupID), 0, -1).Result()

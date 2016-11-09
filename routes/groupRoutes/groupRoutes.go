@@ -9,11 +9,10 @@ import (
 //CreateGroup - create a new group with groupName and user id as the owner
 func CreateGroup(ctx echo.Context) error {
 	userID := ctx.Get("userID").(string)
-	userName := ctx.Get("userName").(string)
-
+	usersName := ctx.Get("usersName").(string)
 	groupName := ctx.FormValue("groupName")
 
-	err := groupOperations.CreateGroup(groupName, userID, userName)
+	err := groupOperations.CreateGroup(groupName, userID, usersName)
 
 	switch err {
 	case nil:
@@ -25,15 +24,13 @@ func CreateGroup(ctx echo.Context) error {
 
 func GetMembers(ctx echo.Context) error {
 	userID := ctx.Get("userID").(string)
-	userName := ctx.Get("userName").(string)
-
 	groupID := ctx.Param("groupID")
 
-	members, err := groupOperations.GetMembers(userID, userName, groupID)
+	members, err := groupOperations.GetMembers(userID, groupID)
 
 	switch err {
 	case nil:
-		return ctx.JSON(200, map[string]interface{}{"members": members})
+		return ctx.JSON(200, members)
 	default:
 		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
 	}
@@ -42,13 +39,11 @@ func GetMembers(ctx echo.Context) error {
 //StoreMessage - store a message in a group
 func StoreMessage(ctx echo.Context) error {
 	userID := ctx.Get("userID").(string)
-	userName := ctx.Get("userName").(string)
-
+	usersName := ctx.Get("usersName").(string)
 	groupID := ctx.Param("groupID")
-
 	message := ctx.FormValue("message")
 
-	err := groupOperations.StoreMessage(groupID, userID, userName, message)
+	err := groupOperations.StoreMessage(groupID, userID, usersName, message)
 
 	switch err {
 	case nil:
@@ -61,11 +56,10 @@ func StoreMessage(ctx echo.Context) error {
 //GetMessages - get all messages for group
 func GetMessages(ctx echo.Context) error {
 	userID := ctx.Get("userID").(string)
-	userName := ctx.Get("userName").(string)
-
+	usersName := ctx.Get("usersName").(string)
 	groupID := ctx.Param("groupID")
 
-	messages, err := groupOperations.GetMessages(userID, userName, groupID)
+	messages, err := groupOperations.GetMessages(userID, usersName, groupID)
 
 	switch err {
 	case nil:
@@ -77,13 +71,11 @@ func GetMessages(ctx echo.Context) error {
 
 func InviteToGroup(ctx echo.Context) error {
 	userID := ctx.Get("userID").(string)
-
 	groupID := ctx.FormValue("groupID")
 	groupName := ctx.FormValue("groupName")
 	invUserID := ctx.FormValue("invUserID")
-	invUserName := ctx.FormValue("invUserName")
 
-	err := groupOperations.InviteToGroup(userID, groupID, groupName, invUserID, invUserName)
+	err := groupOperations.InviteToGroup(userID, groupID, groupName, invUserID)
 
 	switch err {
 	case nil:

@@ -13,8 +13,10 @@ func StoreGeoLocation(groupID string, longitude string, latitude string, userID 
 
 	//DO VALIDATION
 	//check if user exists in group before storing message
-	if !UserIsMember(userID, userName, groupID) {
-		return errors.New("User is not in group.")
+	userIsMember := db.Client.HExists(groupModel.GROUP_MEMBERS(groupID), userID).Val()
+
+	if !userIsMember {
+		return errors.New("You are not a member of this group")
 	}
 
 	long, err1 := strconv.ParseFloat(longitude, 64)
