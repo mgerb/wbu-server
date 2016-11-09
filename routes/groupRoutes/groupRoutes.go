@@ -9,10 +9,10 @@ import (
 //CreateGroup - create a new group with groupName and user id as the owner
 func CreateGroup(ctx echo.Context) error {
 	userID := ctx.Get("userID").(string)
-	usersName := ctx.Get("usersName").(string)
+	fullName := ctx.Get("fullName").(string)
 	groupName := ctx.FormValue("groupName")
 
-	err := groupOperations.CreateGroup(groupName, userID, usersName)
+	err := groupOperations.CreateGroup(groupName, userID, fullName)
 
 	switch err {
 	case nil:
@@ -39,11 +39,11 @@ func GetMembers(ctx echo.Context) error {
 //StoreMessage - store a message in a group
 func StoreMessage(ctx echo.Context) error {
 	userID := ctx.Get("userID").(string)
-	usersName := ctx.Get("usersName").(string)
+	fullName := ctx.Get("fullName").(string)
 	groupID := ctx.Param("groupID")
 	message := ctx.FormValue("message")
 
-	err := groupOperations.StoreMessage(groupID, userID, usersName, message)
+	err := groupOperations.StoreMessage(groupID, userID, fullName, message)
 
 	switch err {
 	case nil:
@@ -56,10 +56,9 @@ func StoreMessage(ctx echo.Context) error {
 //GetMessages - get all messages for group
 func GetMessages(ctx echo.Context) error {
 	userID := ctx.Get("userID").(string)
-	usersName := ctx.Get("usersName").(string)
 	groupID := ctx.Param("groupID")
 
-	messages, err := groupOperations.GetMessages(userID, usersName, groupID)
+	messages, err := groupOperations.GetMessages(userID, groupID)
 
 	switch err {
 	case nil:

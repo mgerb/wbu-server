@@ -2,6 +2,7 @@ package userOperations
 
 import (
 	"errors"
+	"regexp"
 	"strconv"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 	"../../db"
 	"../../model/groupModel"
 	"../../model/userModel"
+	"../../utils/regex"
 	"../fb"
 	"github.com/dgrijalva/jwt-go"
 	"golang.org/x/crypto/bcrypt"
@@ -19,58 +21,72 @@ const (
 	expirationTime int64 = 30 * 24 * 60 * 60
 )
 
-/*
 //CreateUser - store userName/password in hash
-func CreateUser(userName string, password string) error {
+func CreateUser(email string, password string, fullName string) error {
 
-	//DO VALIDATION
-	if !regexp.MustCompile(regex.USERNAME).MatchString(userName) {
-		return errors.New("Invalid userName.")
-	}
-
+	//TODO: validation for email
 	if !regexp.MustCompile(regex.PASSWORD).MatchString(password) {
 		return errors.New("Invalid password.")
 	}
 
-	//check if the userName already exists in redis
-	_, err := GetUserID(userName)
-	if err == nil {
-		return errors.New("userName already exists.")
+	//check if the email already exists in redis
+	emailExists := db.Client.HExists(userModel.USER_ID(), email).Val()
+
+	if emailExists {
+		return errors.New("That email is already taken.")
 	}
 
+	//get a new user id from the id pool
 	temp, _ := db.Client.Incr(userModel.USER_KEY_STORE()).Result()
 	newID := strconv.FormatInt(temp, 10)
+
+	//prepend user id with prefix
+	newID = userModel.GetUserID(newID)
 
 	pipe := db.Client.Pipeline()
 	defer pipe.Close()
 
-	pipe.Set(userModel.USER_ID(userName), newID, 0)
+	//map email to user id
+	pipe.HSet(userModel.USER_ID(), email, newID)
 
 	//set user object in redis
-	pipe.HMSet(userModel.USER_HASH(newID), userModel.USER_HASH_MAP(userName, generateHash(password), "0"))
+	pipe.HMSet(userModel.USER_HASH(newID), userModel.USER_HASH_MAP(email, generateHash(password), "0", fullName))
 
-	_, err = pipe.Exec()
+	_, err := pipe.Exec()
 
 	return err
 }
 
 //Login - check if password and userName are correct
-func Login(userName string, password string) (string, error) {
-	id, err := GetUserID(userName)
+func Login(email string, password string) (string, error) {
+	userID, err := db.Client.HGet(userModel.USER_ID(), email).Result()
 
-	if err == nil {
-		result, _ := db.Client.HGet(userModel.USER_HASH(id), "password").Result()
-		if bcrypt.CompareHashAndPassword([]byte(result), []byte(password)) != nil {
-			return "", errors.New("Invalid password.")
-		}
-	} else {
+	if err != nil {
 		return "", errors.New("User does not exist.")
+	}
+
+	result, err_password := db.Client.HGetAll(userModel.USER_HASH(userID)).Result()
+
+	if err_password != nil {
+		return "", errors.New("Error retrieving account information.")
+	}
+
+	savedPassword := result["password"]
+	fullName := result["fullName"]
+
+	if len(savedPassword) < 5 {
+		return "", errors.New("Invalid account")
+	}
+
+	if bcrypt.CompareHashAndPassword([]byte(savedPassword), []byte(password)) != nil {
+		return "", errors.New("Invalid password.")
 	}
 
 	//if user has valid login - generate jwt
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"userName": userName,
-		"userID":   id,
+		"email":    email,
+		"userID":   userID,
+		"fullName": fullName,
 		"exp":      time.Now().Unix() + expirationTime,
 	})
 
@@ -82,7 +98,6 @@ func Login(userName string, password string) (string, error) {
 
 	return tokenString, nil
 }
-*/
 
 func LoginFacebook(accessToken string) (string, error) {
 	response, err_fb := fb.Me(accessToken)
@@ -92,28 +107,25 @@ func LoginFacebook(accessToken string) (string, error) {
 	}
 
 	email := response["email"].(string)
-	usersName := response["name"].(string)
+	fullName := response["name"].(string)
 	facebookID := response["id"].(string)
 
-	userID, exists_err := db.Client.HGet(userModel.USER_ID(), email).Result()
+	//prepend facebookID with "fb:" to not get mixed with regular user id's
+	userID := userModel.GetUserID_FB(facebookID)
+
+	//check if hash key exists
+	userExists := db.Client.Exists(userModel.USER_HASH(userID)).Val()
 
 	//create user if not exists
-	if exists_err != nil {
-		temp, err_incr := db.Client.Incr(userModel.USER_KEY_STORE()).Result()
-
-		if err_incr != nil {
-			return "", errors.New("Incr error")
-		}
-
-		userID = strconv.FormatInt(temp, 10)
-
+	if !userExists {
 		pipe := db.Client.Pipeline()
 		defer pipe.Close()
 
+		//map users email to new id
 		pipe.HSet(userModel.USER_ID(), email, userID)
 
 		//set user object in redis
-		pipe.HMSet(userModel.USER_HASH(userID), userModel.USER_HASH_MAP("", "", "0", usersName, email, facebookID))
+		pipe.HMSet(userModel.USER_HASH(userID), userModel.USER_HASH_MAP(email, "", "0", fullName))
 
 		_, err_pipe := pipe.Exec()
 
@@ -125,10 +137,10 @@ func LoginFacebook(accessToken string) (string, error) {
 	//log user in
 	//if user has valid login - generate jwt
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"email":     email,
-		"userID":    userID,
-		"usersName": usersName,
-		"exp":       time.Now().Unix() + expirationTime,
+		"email":    email,
+		"userID":   userID,
+		"fullName": fullName,
+		"exp":      time.Now().Unix() + expirationTime,
 	})
 
 	tokenString, tokenError := token.SignedString([]byte(config.Config.TokenSecret))
@@ -138,11 +150,6 @@ func LoginFacebook(accessToken string) (string, error) {
 	}
 
 	return tokenString, nil
-}
-
-//GetUserID = return user id as string
-func GetUserID(email string) (string, error) {
-	return db.Client.HGet(userModel.USER_ID(), email).Result()
 }
 
 //GetUserGroups - get all the groups the user exists in
@@ -155,7 +162,7 @@ func GetInvites(userID string) (map[string]string, error) {
 }
 
 //TODO----------------------------------------------------------
-func JoinGroup(userID string, name string, groupID string) error {
+func JoinGroup(userID string, fullName string, groupID string) error {
 
 	userHasInvite := db.Client.HExists(userModel.USER_GROUP_INVITES(userID), groupID).Val()
 
@@ -166,7 +173,7 @@ func JoinGroup(userID string, name string, groupID string) error {
 	pipe := db.Client.Pipeline()
 	defer pipe.Close()
 
-	pipe.HSet(groupModel.GROUP_MEMBERS(groupID), userID, name)
+	pipe.HSet(groupModel.GROUP_MEMBERS(groupID), userID, fullName)
 	pipe.HDel(userModel.USER_GROUP_INVITES(userID), groupID)
 
 	_, err := pipe.Exec()

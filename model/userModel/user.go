@@ -4,7 +4,7 @@ package userModel
 const (
 	uKeys = "uKeys" //increments on each new user
 
-	userID  = "userID"   //email hash maps to user id
+	userID  = "userID"   //userName/email hash maps to user id
 	uHash   = "uHash:"   //hash map for users = id maps to key values
 	uGrps   = "uGrps:"   //hash for user groups
 	uGrpInv = "uGrpInv:" //hash for user group invites
@@ -30,14 +30,20 @@ func USER_GROUP_INVITES(s string) string {
 	return uGrpInv + s
 }
 
-func USER_HASH_MAP(userName string, password string, adminGroupCount string, name string, email string, facebookID string) map[string]string {
+func GetUserID(s string) string {
+	return "uID:" + s
+}
+
+func GetUserID_FB(s string) string {
+	return "fbID:" + s
+}
+
+func USER_HASH_MAP(email string, password string, adminGroupCount string, fullName string) map[string]string {
 	return map[string]string{
-		"userName":        userName,
+		"email":           email, //a user name or email for facebook users
 		"password":        password,
 		"adminGroupCount": adminGroupCount,
 		"fcmToken":        "",
-		"name":            name,
-		"email":           email,
-		"facebookID":      facebookID,
+		"fullName":        fullName,
 	}
 }

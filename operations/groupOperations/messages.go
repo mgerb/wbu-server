@@ -1,11 +1,12 @@
 package groupOperations
 
 import (
-	"../../db"
-	"../../model/groupModel"
 	"errors"
 	"strconv"
 	"time"
+
+	"../../db"
+	"../../model/groupModel"
 )
 
 //set max number of messages stored at any one point in time
@@ -41,7 +42,7 @@ func StoreMessage(groupID string, userID string, userName string, message string
 	return err
 }
 
-func GetMessages(userID string, userName string, groupID string) ([]string, error) {
+func GetMessages(userID string, groupID string) ([]string, error) {
 
 	//DO VALIDATION
 	userIsMember := db.Client.HExists(groupModel.GROUP_MEMBERS(groupID), userID).Val()

@@ -29,7 +29,9 @@ func checkJWT(next echo.HandlerFunc) echo.HandlerFunc {
 
 		//routes to skip authentication
 		switch path {
-		case "/user/loginFacebook":
+		case "/user/loginFacebook",
+			"/user/login",
+			"/user/createUser":
 			return next(ctx)
 		}
 
@@ -53,8 +55,8 @@ func checkJWT(next echo.HandlerFunc) echo.HandlerFunc {
 					ctx.Set("userID", userID.(string))
 				}
 
-				if usersName, ok_usersName := claims["usersName"]; ok_usersName {
-					ctx.Set("usersName", usersName.(string))
+				if fullName, ok_fullName := claims["fullName"]; ok_fullName {
+					ctx.Set("fullName", fullName.(string))
 				}
 
 				return next(ctx)

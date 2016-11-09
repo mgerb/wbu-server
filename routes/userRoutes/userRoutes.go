@@ -22,13 +22,13 @@ func HandleTest(ctx echo.Context) error {
 	return ctx.JSON(500, "test works")
 }
 
-/*
 //CreateUser - create user account - currently takes in userName and password
 func CreateUser(ctx echo.Context) error {
-	userName := ctx.FormValue("userName")
+	email := ctx.FormValue("email")
 	password := ctx.FormValue("password")
+	fullName := ctx.FormValue("fullName")
 
-	err := userOperations.CreateUser(userName, password)
+	err := userOperations.CreateUser(email, password, fullName)
 
 	switch err {
 	case nil:
@@ -40,10 +40,10 @@ func CreateUser(ctx echo.Context) error {
 
 //Login - log the user in - on success send jwt
 func Login(ctx echo.Context) error {
-	userName := ctx.FormValue("userName")
+	email := ctx.FormValue("email")
 	password := ctx.FormValue("password")
 
-	jwt, err := userOperations.Login(userName, password)
+	jwt, err := userOperations.Login(email, password)
 
 	switch err {
 	case nil:
@@ -52,7 +52,6 @@ func Login(ctx echo.Context) error {
 		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
 	}
 }
-*/
 
 func LoginFacebook(ctx echo.Context) error {
 	//facebook access token
@@ -98,10 +97,10 @@ func GetInvites(ctx echo.Context) error {
 
 func JoinGroup(ctx echo.Context) error {
 	userID := ctx.Get("userID").(string)
-	name := ctx.Get("name").(string)
+	fullName := ctx.Get("fullName").(string)
 	groupID := ctx.FormValue("groupID")
 
-	err := userOperations.JoinGroup(userID, name, groupID)
+	err := userOperations.JoinGroup(userID, fullName, groupID)
 
 	switch err {
 	case nil:

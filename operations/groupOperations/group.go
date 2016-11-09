@@ -1,17 +1,18 @@
 package groupOperations
 
 import (
+	"errors"
+	"regexp"
+	"strconv"
+
 	"../../db"
 	"../../model/groupModel"
 	"../../model/userModel"
 	"../../utils/regex"
-	"errors"
-	"regexp"
-	"strconv"
 )
 
 //CreateGroup - store userName/password in hash
-func CreateGroup(groupName string, userID string, usersName string) error {
+func CreateGroup(groupName string, userID string, fullName string) error {
 
 	//DO VALIDATION
 	if !regexp.MustCompile(regex.GROUP_NAME).MatchString(groupName) {
@@ -20,7 +21,7 @@ func CreateGroup(groupName string, userID string, usersName string) error {
 
 	groupExists := db.Client.HExists(groupModel.GROUP_ID(), groupName).Val()
 
-	if !groupExists {
+	if groupExists {
 		return errors.New("Group already exists.")
 	}
 
@@ -35,7 +36,7 @@ func CreateGroup(groupName string, userID string, usersName string) error {
 	//store group hash
 	pipe.HMSet(groupModel.GROUP_HASH(newID), groupModel.GROUP_HASH_MAP(groupName, userID))
 
-	pipe.HSet(groupModel.GROUP_MEMBERS(newID), userID, usersName)
+	pipe.HSet(groupModel.GROUP_MEMBERS(newID), userID, fullName)
 	pipe.HSet(userModel.USER_GROUPS(userID), newID, groupName)
 	pipe.HIncrBy(userModel.USER_HASH(userID), "adminGroupCount", 1)
 
