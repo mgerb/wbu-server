@@ -1,16 +1,16 @@
 package userOperations
 
 import (
+	"errors"
+	"regexp"
+	"strconv"
+
 	"../../db"
-	"../../model/groupModel"
 	"../../model/userModel"
 	"../../utils/regex"
 	"../../utils/tokens"
 	"../fb"
-	"errors"
 	"golang.org/x/crypto/bcrypt"
-	"regexp"
-	"strconv"
 )
 
 //CreateUser - store userName/password in hash
@@ -50,38 +50,46 @@ func CreateUser(email string, password string, fullName string) error {
 }
 
 //Login - check if password and userName are correct
-func Login(email string, password string) (string, error) {
+func Login(email string, password string) (map[string]string, error) {
 	userID, err := db.Client.HGet(userModel.USER_ID(), email).Result()
 
 	if err != nil {
-		return "", errors.New("User does not exist.")
+		return map[string]string{}, errors.New("User does not exist.")
 	}
 
 	result, err_password := db.Client.HGetAll(userModel.USER_HASH(userID)).Result()
 
 	if err_password != nil {
-		return "", errors.New("Error retrieving account information.")
+		return map[string]string{}, errors.New("Error retrieving account information.")
 	}
 
 	savedPassword := result["password"]
 	fullName := result["fullName"]
 
 	if len(savedPassword) < 5 {
-		return "", errors.New("Invalid account")
+		return map[string]string{}, errors.New("Invalid account")
 	}
 
 	if bcrypt.CompareHashAndPassword([]byte(savedPassword), []byte(password)) != nil {
-		return "", errors.New("Invalid password.")
+		return map[string]string{}, errors.New("Invalid password.")
 	}
 
-	return tokens.GetJWT(email, userID, fullName)
+	token, err_token := tokens.GetJWT(email, userID, fullName)
+
+	return map[string]string {
+		"id": userID,
+		"email": email,
+		"userID": userID,
+		"fullName": fullName,
+		"jwt": token,
+	}, err_token
 }
 
-func LoginFacebook(accessToken string) (string, error) {
+func LoginFacebook(accessToken string) (map[string]string, error) {
 	response, err_fb := fb.Me(accessToken)
 
 	if err_fb != nil {
-		return "", errors.New("Invalid FB token")
+		return map[string]string{}, errors.New("Invalid FB token")
 	}
 
 	email := response["email"].(string)
@@ -108,11 +116,19 @@ func LoginFacebook(accessToken string) (string, error) {
 		_, err_pipe := pipe.Exec()
 
 		if err_pipe != nil {
-			return "", errors.New("pipe error")
+			return map[string]string{}, errors.New("pipe error")
 		}
 	}
 
-	return tokens.GetJWT(email, userID, fullName)
+	token, err_token := tokens.GetJWT(email, userID, fullName)
+
+	return map[string]string {
+		"id": userID,
+		"email": email,
+		"userID": userID,
+		"fullName": fullName,
+		"jwt": token,
+	}, err_token
 }
 
 //GetUserGroups - get all the groups the user exists in
@@ -125,41 +141,6 @@ func GetInvites(userID string) (map[string]string, error) {
 }
 
 //TODO----------------------------------------------------------
-func JoinGroup(userID string, groupID string) error {
-
-	pipe := db.Client.Pipeline()
-	defer pipe.Close()
-
-	userInfo := pipe.HGetAll(userModel.USER_HASH(userID))
-	groupInfo := pipe.HGetAll(groupModel.GROUP_HASH(groupID))
-
-	userHasInvite := pipe.HExists(userModel.USER_GROUP_INVITES(userID), groupID)
-
-	_, err_pipe1 := pipe.Exec()
-
-	if err_pipe1 != nil {
-		return err_pipe1
-	}
-
-	if !userHasInvite.Val() {
-		return errors.New("User does not have an invite.")
-	}
-
-	fullName := userInfo.Val()["fullName"]
-	groupName := groupInfo.Val()["groupName"]
-
-	pipe.HSet(groupModel.GROUP_MEMBERS(groupID), userID, fullName)
-	pipe.HSet(userModel.USER_GROUPS(userID), groupID, groupName)
-	pipe.HDel(userModel.USER_GROUP_INVITES(userID), groupID)
-
-	_, err_pipe2 := pipe.Exec()
-
-	if err_pipe2 != nil {
-		return err_pipe2
-	}
-
-	return nil
-}
 
 func LeaveGroup(userID string, groupid string) error {
 	return errors.New("TODO")

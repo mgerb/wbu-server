@@ -43,11 +43,11 @@ func Login(ctx echo.Context) error {
 	email := ctx.FormValue("email")
 	password := ctx.FormValue("password")
 
-	jwt, err := userOperations.Login(email, password)
+	userInfo, err := userOperations.Login(email, password)
 
 	switch err {
 	case nil:
-		return ctx.JSON(200, map[string]string{"token": jwt})
+		return ctx.JSON(200, userInfo)
 	default:
 		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
 	}
@@ -58,11 +58,11 @@ func LoginFacebook(ctx echo.Context) error {
 	accessToken := ctx.FormValue("accessToken")
 
 	//create new jwt for user authentication to this server
-	jwt, err := userOperations.LoginFacebook(accessToken)
+	userInfo, err := userOperations.LoginFacebook(accessToken)
 
 	switch err {
 	case nil:
-		return ctx.JSON(200, map[string]string{"token": jwt})
+		return ctx.JSON(200, userInfo)
 	default:
 		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
 	}
@@ -89,21 +89,6 @@ func GetInvites(ctx echo.Context) error {
 	switch err {
 	case nil:
 		return ctx.JSON(200, invites)
-
-	default:
-		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
-	}
-}
-
-func JoinGroup(ctx echo.Context) error {
-	userID := ctx.Get("userID").(string)
-	groupID := ctx.FormValue("groupID")
-
-	err := userOperations.JoinGroup(userID, groupID)
-
-	switch err {
-	case nil:
-		return ctx.JSON(200, response.Json("Joined group.", response.SUCCESS))
 
 	default:
 		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))

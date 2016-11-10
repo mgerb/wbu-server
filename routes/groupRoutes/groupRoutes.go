@@ -9,10 +9,9 @@ import (
 //CreateGroup - create a new group with groupName and user id as the owner
 func CreateGroup(ctx echo.Context) error {
 	userID := ctx.Get("userID").(string)
-	fullName := ctx.Get("fullName").(string)
 	groupName := ctx.FormValue("groupName")
 
-	err := groupOperations.CreateGroup(groupName, userID, fullName)
+	err := groupOperations.CreateGroup(groupName, userID)
 
 	switch err {
 	case nil:
@@ -77,6 +76,21 @@ func InviteUser(ctx echo.Context) error {
 	switch err {
 	case nil:
 		return ctx.JSON(200, response.Json("User invited.", response.SUCCESS))
+	default:
+		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
+	}
+}
+
+func JoinGroup(ctx echo.Context) error {
+	userID := ctx.Get("userID").(string)
+	groupID := ctx.FormValue("groupID")
+
+	err := groupOperations.JoinGroup(userID, groupID)
+
+	switch err {
+	case nil:
+		return ctx.JSON(200, response.Json("Joined group.", response.SUCCESS))
+
 	default:
 		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
 	}

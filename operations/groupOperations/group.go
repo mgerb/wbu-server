@@ -12,24 +12,33 @@ import (
 )
 
 //CreateGroup - store userName/password in hash
-func CreateGroup(groupName string, userID string, fullName string) error {
+func CreateGroup(groupName string, userID string) error {
 
 	//DO VALIDATION
 	if !regexp.MustCompile(regex.GROUP_NAME).MatchString(groupName) {
 		return errors.New("Invalid group name.")
 	}
 
-	groupExists := db.Client.HExists(groupModel.GROUP_ID(), groupName).Val()
+	pipe := db.Client.Pipeline()
+	defer pipe.Close()
 
-	if groupExists {
+	tempFullName := pipe.HGet(userModel.USER_HASH(userID), "fullName")
+	groupExists := pipe.HExists(groupModel.GROUP_ID(), groupName)
+
+	_, err_pipe1 := pipe.Exec()
+
+	if err_pipe1 != nil {
+		return errors.New("Pipe error.")
+	}
+
+	if groupExists.Val() {
 		return errors.New("Group already exists.")
 	}
 
+	fullName := tempFullName.Val()
+	
 	temp, _ := db.Client.Incr(groupModel.GROUP_KEY_STORE()).Result()
 	newID := strconv.FormatInt(temp, 10)
-
-	pipe := db.Client.Pipeline()
-	defer pipe.Close()
 
 	pipe.HSet(groupModel.GROUP_ID(), groupName, newID)
 
@@ -113,5 +122,38 @@ func InviteToGroup(groupOwnerID string, groupID string, invUserID string) error 
 	return nil
 }
 
-//TODO-----------------------------------------------------------------
-//TODO-----------------------------------------------------------------
+func JoinGroup(userID string, groupID string) error {
+
+	pipe := db.Client.Pipeline()
+	defer pipe.Close()
+
+	userInfo := pipe.HGetAll(userModel.USER_HASH(userID))
+	groupInfo := pipe.HGetAll(groupModel.GROUP_HASH(groupID))
+
+	userHasInvite := pipe.HExists(userModel.USER_GROUP_INVITES(userID), groupID)
+
+	_, err_pipe1 := pipe.Exec()
+
+	if err_pipe1 != nil {
+		return err_pipe1
+	}
+
+	if !userHasInvite.Val() {
+		return errors.New("User does not have an invite.")
+	}
+
+	fullName := userInfo.Val()["fullName"]
+	groupName := groupInfo.Val()["groupName"]
+
+	pipe.HSet(groupModel.GROUP_MEMBERS(groupID), userID, fullName)
+	pipe.HSet(userModel.USER_GROUPS(userID), groupID, groupName)
+	pipe.HDel(userModel.USER_GROUP_INVITES(userID), groupID)
+
+	_, err_pipe2 := pipe.Exec()
+
+	if err_pipe2 != nil {
+		return err_pipe2
+	}
+
+	return nil
+}
