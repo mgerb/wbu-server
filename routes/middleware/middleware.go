@@ -20,6 +20,7 @@ func ApplyMiddleware(app *echo.Echo) {
 	}
 }
 
+//TODO - jwt refreshing
 //define custom JWT middleware
 func checkJWT(next echo.HandlerFunc) echo.HandlerFunc {
 
