@@ -76,12 +76,12 @@ func Login(email string, password string) (map[string]string, error) {
 
 	token, err_token := tokens.GetJWT(email, userID, fullName)
 
-	return map[string]string {
-		"id": userID,
-		"email": email,
-		"userID": userID,
+	return map[string]string{
+		"id":       userID,
+		"email":    email,
+		"userID":   userID,
 		"fullName": fullName,
-		"jwt": token,
+		"jwt":      token,
 	}, err_token
 }
 
@@ -122,12 +122,12 @@ func LoginFacebook(accessToken string) (map[string]string, error) {
 
 	token, err_token := tokens.GetJWT(email, userID, fullName)
 
-	return map[string]string {
-		"id": userID,
-		"email": email,
-		"userID": userID,
+	return map[string]string{
+		"id":       userID,
+		"email":    email,
+		"userID":   userID,
 		"fullName": fullName,
-		"jwt": token,
+		"jwt":      token,
 	}, err_token
 }
 
