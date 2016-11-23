@@ -1,10 +1,11 @@
 package tokens
 
 import (
-	"../../config"
 	"errors"
-	"github.com/dgrijalva/jwt-go"
 	"time"
+
+	"../../config"
+	"github.com/dgrijalva/jwt-go"
 )
 
 const (
@@ -12,7 +13,8 @@ const (
 	expirationTime int64 = 60 * 24 * 60 * 60 //60 days
 )
 
-func GetJWT(email string, userID string, fullName string) (string, error) {
+func GetJWT(email string, userID string, fullName string) (string, int64, error) {
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"email":    email,
 		"userID":   userID,
@@ -22,9 +24,11 @@ func GetJWT(email string, userID string, fullName string) (string, error) {
 
 	tokenString, tokenError := token.SignedString([]byte(config.Config.TokenSecret))
 
+	lastRefreshTime := time.Now().Unix()
+
 	if tokenError != nil {
-		return "", errors.New("Token error.")
+		return "", lastRefreshTime, errors.New("Token error.")
 	}
 
-	return tokenString, nil
+	return tokenString, time.Now().Unix(), nil
 }

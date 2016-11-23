@@ -3,6 +3,7 @@ package userRoutes
 import (
 	"../../operations/userOperations"
 	"../../utils/response"
+	"../../utils/tokens"
 	"github.com/labstack/echo"
 )
 
@@ -89,6 +90,22 @@ func GetInvites(ctx echo.Context) error {
 	switch err {
 	case nil:
 		return ctx.JSON(200, invites)
+
+	default:
+		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
+	}
+}
+
+func RefreshJWT(ctx echo.Context) error {
+	email := ctx.Get("email").(string)
+	userID := ctx.Get("userID").(string)
+	fullName := ctx.Get("fullName").(string)
+
+	token, lastRefreshTime, err := tokens.GetJWT(email, userID, fullName)
+
+	switch err {
+	case nil:
+		return ctx.JSON(200, map[string]interface{}{"jwt": token, "lastRefreshTime": lastRefreshTime})
 
 	default:
 		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
