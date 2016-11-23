@@ -50,46 +50,46 @@ func CreateUser(email string, password string, fullName string) error {
 }
 
 //Login - check if password and userName are correct
-func Login(email string, password string) (map[string]string, error) {
+func Login(email string, password string) (map[string]interface{}, error) {
 	userID, err := db.Client.HGet(userModel.USER_ID(), email).Result()
 
 	if err != nil {
-		return map[string]string{}, errors.New("User does not exist.")
+		return map[string]interface{}{}, errors.New("User does not exist.")
 	}
 
 	result, err_password := db.Client.HGetAll(userModel.USER_HASH(userID)).Result()
 
 	if err_password != nil {
-		return map[string]string{}, errors.New("Error retrieving account information.")
+		return map[string]interface{}{}, errors.New("Error retrieving account information.")
 	}
 
 	savedPassword := result["password"]
 	fullName := result["fullName"]
 
 	if len(savedPassword) < 5 {
-		return map[string]string{}, errors.New("Invalid account")
+		return map[string]interface{}{}, errors.New("Invalid account")
 	}
 
 	if bcrypt.CompareHashAndPassword([]byte(savedPassword), []byte(password)) != nil {
-		return map[string]string{}, errors.New("Invalid password.")
+		return map[string]interface{}{}, errors.New("Invalid password.")
 	}
 
-	token, err_token := tokens.GetJWT(email, userID, fullName)
+	token, lastRefreshTime, err_token := tokens.GetJWT(email, userID, fullName)
 
-	return map[string]string{
-		"id":       userID,
-		"email":    email,
-		"userID":   userID,
-		"fullName": fullName,
-		"jwt":      token,
+	return map[string]interface{}{
+		"email":           email,
+		"userID":          userID,
+		"fullName":        fullName,
+		"jwt":             token,
+		"lastRefreshTime": lastRefreshTime,
 	}, err_token
 }
 
-func LoginFacebook(accessToken string) (map[string]string, error) {
+func LoginFacebook(accessToken string) (map[string]interface{}, error) {
 	response, err_fb := fb.Me(accessToken)
 
 	if err_fb != nil {
-		return map[string]string{}, errors.New("Invalid FB token")
+		return map[string]interface{}{}, errors.New("Invalid FB token")
 	}
 
 	email := response["email"].(string)
@@ -116,18 +116,18 @@ func LoginFacebook(accessToken string) (map[string]string, error) {
 		_, err_pipe := pipe.Exec()
 
 		if err_pipe != nil {
-			return map[string]string{}, errors.New("pipe error")
+			return map[string]interface{}{}, errors.New("pipe error")
 		}
 	}
 
-	token, err_token := tokens.GetJWT(email, userID, fullName)
+	token, lastRefreshTime, err_token := tokens.GetJWT(email, userID, fullName)
 
-	return map[string]string{
-		"id":       userID,
-		"email":    email,
-		"userID":   userID,
-		"fullName": fullName,
-		"jwt":      token,
+	return map[string]interface{}{
+		"email":           email,
+		"userID":          userID,
+		"fullName":        fullName,
+		"jwt":             token,
+		"lastRefreshTime": lastRefreshTime,
 	}, err_token
 }
 

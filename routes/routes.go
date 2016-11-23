@@ -18,6 +18,7 @@ func RegisterRoutes(app *echo.Echo) {
 	//user
 	app.GET("/user/groups", userRoutes.GetGroups)
 	app.GET("/user/invites", userRoutes.GetInvites)
+	app.GET("/user/refreshJWT", userRoutes.RefreshJWT)
 
 	//groups
 	app.GET("/group/members/:groupID", groupRoutes.GetMembers)
