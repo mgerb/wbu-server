@@ -140,14 +140,6 @@ func GetInvites(userID string) (map[string]string, error) {
 	return db.Client.HGetAll(userModel.USER_GROUP_INVITES(userID)).Result()
 }
 
-//TODO----------------------------------------------------------
-
-func LeaveGroup(userID string, groupid string) error {
-	return errors.New("TODO")
-}
-
-//TODO----------------------------------------------------------
-
 func generateHash(password string) string {
 	hash, _ := bcrypt.GenerateFromPassword([]byte(password), 0)
 	return string(hash)

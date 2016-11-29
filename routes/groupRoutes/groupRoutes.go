@@ -90,7 +90,34 @@ func JoinGroup(ctx echo.Context) error {
 	switch err {
 	case nil:
 		return ctx.JSON(200, response.Json("Joined group.", response.SUCCESS))
+	default:
+		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
+	}
+}
 
+func LeaveGroup(ctx echo.Context) error {
+	userID := ctx.Get("userID").(string)
+	groupID := ctx.FormValue("groupID")
+
+	err := groupOperations.LeaveGroup(userID, groupID)
+
+	switch err {
+	case nil:
+		return ctx.JSON(200, response.Json("Left group.", response.SUCCESS))
+	default:
+		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
+	}
+}
+
+func DeleteGroup(ctx echo.Context) error {
+	userID := ctx.Get("userID").(string)
+	groupID := ctx.FormValue("groupID")
+
+	err := groupOperations.DeleteGroup(userID, groupID)
+
+	switch err {
+	case nil:
+		return ctx.JSON(200, response.Json("Group deleted.", response.SUCCESS))
 	default:
 		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
 	}

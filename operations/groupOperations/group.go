@@ -36,7 +36,7 @@ func CreateGroup(groupName string, userID string) error {
 	}
 
 	fullName := tempFullName.Val()
-	
+
 	temp, _ := db.Client.Incr(groupModel.GROUP_KEY_STORE()).Result()
 	newID := strconv.FormatInt(temp, 10)
 
@@ -130,12 +130,21 @@ func JoinGroup(userID string, groupID string) error {
 	userInfo := pipe.HGetAll(userModel.USER_HASH(userID))
 	groupInfo := pipe.HGetAll(groupModel.GROUP_HASH(groupID))
 
+	groupExists := pipe.Exists(groupModel.GROUP_HASH(groupID))
 	userHasInvite := pipe.HExists(userModel.USER_GROUP_INVITES(userID), groupID)
 
 	_, err_pipe1 := pipe.Exec()
 
 	if err_pipe1 != nil {
 		return err_pipe1
+	}
+
+	if !groupExists.Val() {
+		//delete user invite if group has been deleted and they still have an invite
+		if userHasInvite.Val() {
+			db.Client.HDel(userModel.USER_GROUP_INVITES(userID), groupID)
+		}
+		return errors.New("Group does not exist.")
 	}
 
 	if !userHasInvite.Val() {
@@ -156,4 +165,57 @@ func JoinGroup(userID string, groupID string) error {
 	}
 
 	return nil
+}
+
+func LeaveGroup(userID string, groupID string) error {
+
+	pipe := db.Client.Pipeline()
+	defer pipe.Close()
+
+	userExistsInGroup := pipe.HExists(groupModel.GROUP_MEMBERS(groupID), userID)
+	groupExistsInUser := pipe.HExists(userModel.USER_GROUPS(userID), groupID)
+
+	_, err1 := pipe.Exec()
+
+	if err1 != nil {
+		return errors.New("Pipe error.")
+	}
+
+	if !userExistsInGroup.Val() && !groupExistsInUser.Val() {
+		return errors.New("You are not a member of this group.")
+	}
+
+	pipe.HDel(groupModel.GROUP_MEMBERS(groupID), userID)
+	pipe.HDel(userModel.USER_GROUPS(userID), groupID)
+
+	_, err2 := pipe.Exec()
+
+	return err2
+}
+
+func DeleteGroup(userID string, groupID string) error {
+
+	groupHash := db.Client.HGetAll(groupModel.GROUP_HASH(groupID)).Val()
+
+	groupName := groupHash["groupName"]
+	groupOwner := groupHash["owner"]
+
+	if groupOwner != userID {
+		return errors.New("You are not the owner of this group.")
+	}
+
+	pipe := db.Client.Pipeline()
+	defer pipe.Close()
+
+	if groupName != "" {
+		pipe.HDel(groupModel.GROUP_ID(), groupName)
+	}
+
+	pipe.Del(groupModel.GROUP_MEMBERS(groupID))
+	pipe.Del(groupModel.GROUP_MESSAGES(groupID))
+	pipe.Del(groupModel.GROUP_GEO(groupID))
+
+	_, err := pipe.Exec()
+
+	return err
 }
