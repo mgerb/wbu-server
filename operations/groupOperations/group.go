@@ -1,14 +1,14 @@
 package groupOperations
 
 import (
+	"errors"
+	"regexp"
+	"strconv"
+
 	"../../db"
 	"../../model/groupModel"
 	"../../model/userModel"
 	"../../utils/regex"
-	"errors"
-	redis "gopkg.in/redis.v5"
-	"regexp"
-	"strconv"
 )
 
 //CreateGroup - store userName/password in hash
@@ -167,24 +167,55 @@ func JoinGroup(userID string, groupID string) error {
 	return nil
 }
 
-/*
 func LeaveGroup(userID string, groupID string) error {
 
 	pipe := db.Client.Pipeline()
 	defer pipe.Close()
 
+	userExistsInGroup := pipe.HExists(groupModel.GROUP_MEMBERS(groupID), userID)
+	groupExistsInUser := pipe.HExists(userModel.USER_GROUPS(userID), groupID)
+
+	_, err1 := pipe.Exec()
+
+	if err1 != nil {
+		return errors.New("Pipe error.")
+	}
+
+	if !userExistsInGroup.Val() && !groupExistsInUser.Val() {
+		return errors.New("You are not a member of this group.")
+	}
+
+	pipe.HDel(groupModel.GROUP_MEMBERS(groupID), userID)
+	pipe.HDel(userModel.USER_GROUPS(userID), groupID)
+
+	_, err2 := pipe.Exec()
+
+	return err2
 }
-*/
 
-func DeleteGroup(pipe *redis.Pipeline, groupID string) {
-	//delete all group keys
-	//group hash
-	pipe.Del(groupModel.GROUP_HASH(groupID))
+func DeleteGroup(userID string, groupID string) error {
 
-	//group messages
-	pipe.Del(groupModel.GROUP_MESSAGE(groupID))
+	groupHash := db.Client.HGetAll(groupModel.GROUP_HASH(groupID)).Val()
 
-	//group geo locations
+	groupName := groupHash["groupName"]
+	groupOwner := groupHash["owner"]
+
+	if groupOwner != userID {
+		return errors.New("You are not the owner of this group.")
+	}
+
+	pipe := db.Client.Pipeline()
+	defer pipe.Close()
+
+	if groupName != "" {
+		pipe.HDel(groupModel.GROUP_ID(), groupName)
+	}
+
+	pipe.Del(groupModel.GROUP_MEMBERS(groupID))
+	pipe.Del(groupModel.GROUP_MESSAGES(groupID))
 	pipe.Del(groupModel.GROUP_GEO(groupID))
 
+	_, err := pipe.Exec()
+
+	return err
 }
