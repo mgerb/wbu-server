@@ -1,14 +1,14 @@
 package groupOperations
 
 import (
-	"errors"
-	"regexp"
-	"strconv"
-
 	"../../db"
 	"../../model/groupModel"
 	"../../model/userModel"
 	"../../utils/regex"
+	"errors"
+	redis "gopkg.in/redis.v5"
+	"regexp"
+	"strconv"
 )
 
 //CreateGroup - store userName/password in hash
@@ -36,7 +36,7 @@ func CreateGroup(groupName string, userID string) error {
 	}
 
 	fullName := tempFullName.Val()
-	
+
 	temp, _ := db.Client.Incr(groupModel.GROUP_KEY_STORE()).Result()
 	newID := strconv.FormatInt(temp, 10)
 
@@ -130,12 +130,21 @@ func JoinGroup(userID string, groupID string) error {
 	userInfo := pipe.HGetAll(userModel.USER_HASH(userID))
 	groupInfo := pipe.HGetAll(groupModel.GROUP_HASH(groupID))
 
+	groupExists := pipe.Exists(groupModel.GROUP_HASH(groupID))
 	userHasInvite := pipe.HExists(userModel.USER_GROUP_INVITES(userID), groupID)
 
 	_, err_pipe1 := pipe.Exec()
 
 	if err_pipe1 != nil {
 		return err_pipe1
+	}
+
+	if !groupExists.Val() {
+		//delete user invite if group has been deleted and they still have an invite
+		if userHasInvite.Val() {
+			db.Client.HDel(userModel.USER_GROUP_INVITES(userID), groupID)
+		}
+		return errors.New("Group does not exist.")
 	}
 
 	if !userHasInvite.Val() {
@@ -156,4 +165,26 @@ func JoinGroup(userID string, groupID string) error {
 	}
 
 	return nil
+}
+
+/*
+func LeaveGroup(userID string, groupID string) error {
+
+	pipe := db.Client.Pipeline()
+	defer pipe.Close()
+
+}
+*/
+
+func DeleteGroup(pipe *redis.Pipeline, groupID string) {
+	//delete all group keys
+	//group hash
+	pipe.Del(groupModel.GROUP_HASH(groupID))
+
+	//group messages
+	pipe.Del(groupModel.GROUP_MESSAGE(groupID))
+
+	//group geo locations
+	pipe.Del(groupModel.GROUP_GEO(groupID))
+
 }
