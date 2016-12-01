@@ -16,11 +16,21 @@ import (
 //CreateUser - store userName/password in hash
 func CreateUser(email string, password string, fullName string) error {
 
-	//TODO: validation for email
+	//validation password
 	if !regexp.MustCompile(regex.PASSWORD).MatchString(password) {
 		return errors.New("Invalid password.")
 	}
 
+	//validate email
+	if !regexp.MustCompile(regex.EMAIL).MatchString(email) {
+		return errors.New("Invalid email.")
+	}
+	
+	//validate full name
+	if !regexp.MustCompile(regex.FULL_NAME).MatchString(fullName) {
+		return errors.New("Invalid name.")
+	}
+	
 	//check if the email already exists in redis
 	emailExists := db.Client.HExists(userModel.USER_ID(), email).Val()
 

@@ -23,6 +23,7 @@ func RegisterRoutes(app *echo.Echo) {
 	//groups
 	app.GET("/group/members/:groupID", groupRoutes.GetMembers)
 	app.GET("/group/messages/:groupID", groupRoutes.GetMessages)
+	app.GET("/group/getGeoLocations/:groupID", groupRoutes.GetGeoLocations)
 
 	//user
 	app.POST("/user/createUser", userRoutes.CreateUser)
@@ -36,4 +37,7 @@ func RegisterRoutes(app *echo.Echo) {
 	app.POST("/group/leaveGroup", groupRoutes.LeaveGroup)
 	app.POST("/group/deleteGroup", groupRoutes.DeleteGroup)
 	app.POST("/group/storeMessage", groupRoutes.StoreMessage)
+
+	//geo
+	app.POST("/group/storeGeoLocation", groupRoutes.StoreGeoLocation)
 }
