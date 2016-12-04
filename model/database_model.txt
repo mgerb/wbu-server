@@ -19,7 +19,7 @@ group(
     grMem:<groupID> => [...{userID:username}]      //array of userID's
     
     -list of group messages 
-    grMsg:<groupID> => [userID/time/message]  //list of messages for each group
+    grMsg:<groupID> => [userID/fullName/time/message]  //list of messages for each group
     
     -geoset of group locations
     grGeo:<groupID, long, lat, userID/userName/timestamp> => 
@@ -47,4 +47,7 @@ user(
     
     -hash of user group invites
     uGrpInv:<userID> => [...{groupID:groupName}]   //contains set of group id's that user has pending invites to
+    
+    -set of user messages
+    uGrpMsg:<userID>:<groupID> => [...{userID/fullName/timeStamp/message}]
 )

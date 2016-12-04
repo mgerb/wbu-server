@@ -25,12 +25,12 @@ func CreateUser(email string, password string, fullName string) error {
 	if !regexp.MustCompile(regex.EMAIL).MatchString(email) {
 		return errors.New("Invalid email.")
 	}
-	
+
 	//validate full name
 	if !regexp.MustCompile(regex.FULL_NAME).MatchString(fullName) {
 		return errors.New("Invalid name.")
 	}
-	
+
 	//check if the email already exists in redis
 	emailExists := db.Client.HExists(userModel.USER_ID(), email).Val()
 

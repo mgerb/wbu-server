@@ -4,5 +4,6 @@
 
 - -p production mode
 
+# TODO
 
-TODO: change group operations over to hashes
+- convert pipeline redis calls to use lua scripts
