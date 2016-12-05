@@ -1,12 +1,13 @@
 package groupOperations
 
 import (
+	"errors"
+	"time"
+
 	"../../db"
 	"../../model/groupModel"
 	"../../model/userModel"
-	"errors"
 	redis "gopkg.in/redis.v5"
-	"time"
 )
 
 func StoreUserGroupMessages(groupID string, userID string, message string) error {
@@ -47,9 +48,12 @@ func StoreUserGroupMessages(groupID string, userID string, message string) error
 		
 		-- cycle through each key in the group member hash
 		for i = 1, #members, 2 do
-			redis.call("SADD", userGrpMsgKey  .. members[i] .. ":" .. groupID, fullMessage)
-			-- reset the expire time for each message
-			redis.call("EXPIRE", userGrpMsgKey  .. members[i] .. ":" .. groupID, oneMonth)
+			-- don't add message to the user who sent it because it is saved on the client side
+			if members[i] ~= userID then
+				redis.call("SADD", userGrpMsgKey  .. members[i] .. ":" .. groupID, fullMessage)
+				-- reset the expire time for each message
+				redis.call("EXPIRE", userGrpMsgKey  .. members[i] .. ":" .. groupID, oneMonth)
+			end
 		end
 		
 		return "Success"
