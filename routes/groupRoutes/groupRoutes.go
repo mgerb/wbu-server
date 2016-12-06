@@ -41,11 +41,11 @@ func StoreMessage(ctx echo.Context) error {
 	groupID := ctx.FormValue("groupID")
 	message := ctx.FormValue("message")
 
-	err := groupOperations.StoreMessage(groupID, userID, message)
+	err := groupOperations.StoreUserGroupMessages(groupID, userID, message)
 
 	switch err {
 	case nil:
-		return ctx.JSON(200, response.Json("Message received.", response.SUCCESS))
+		return ctx.JSON(200, response.Json("Message stored.", response.SUCCESS))
 	default:
 		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
 	}
@@ -56,7 +56,7 @@ func GetMessages(ctx echo.Context) error {
 	userID := ctx.Get("userID").(string)
 	groupID := ctx.Param("groupID")
 
-	messages, err := groupOperations.GetMessages(userID, groupID)
+	messages, err := groupOperations.GetUserGroupMessages(groupID, userID)
 
 	switch err {
 	case nil:

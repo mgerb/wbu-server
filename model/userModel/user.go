@@ -8,6 +8,7 @@ const (
 	uHash   = "uHash:"   //hash map for users = id maps to key values
 	uGrps   = "uGrps:"   //hash for user groups
 	uGrpInv = "uGrpInv:" //hash for user group invites
+	uGrpMsg = "uGrpMsg:" //set for user messages for each group
 )
 
 func USER_KEY_STORE() string {
@@ -28,6 +29,14 @@ func USER_GROUPS(s string) string {
 
 func USER_GROUP_INVITES(s string) string {
 	return uGrpInv + s
+}
+
+func USER_GROUP_MESSAGES(userID string, groupID string) string {
+	return uGrpMsg + userID + ":" + groupID
+}
+
+func USER_GROUP_MESSAGE_KEY() string {
+	return uGrpMsg
 }
 
 func GetUserID(s string) string {

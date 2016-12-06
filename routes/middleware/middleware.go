@@ -32,7 +32,8 @@ func checkJWT(next echo.HandlerFunc) echo.HandlerFunc {
 		switch path {
 		case "/user/loginFacebook",
 			"/user/login",
-			"/user/createUser":
+			"/user/createUser",
+			"/test":
 			return next(ctx)
 		}
 
