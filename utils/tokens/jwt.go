@@ -16,10 +16,10 @@ const (
 func GetJWT(email string, userID string, fullName string) (string, int64, error) {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"email":    email,
-		"userID":   userID,
-		"fullName": fullName,
-		"exp":      time.Now().Unix() + expirationTime,
+		"email":           email,
+		"userID":          userID,
+		"fullName":        fullName,
+		"lastRefreshTime": time.Now().Unix() + expirationTime,
 	})
 
 	tokenString, tokenError := token.SignedString([]byte(config.Config.TokenSecret))
