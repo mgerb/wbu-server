@@ -27,6 +27,7 @@ func RegisterRoutes(app *echo.Echo) {
 
 	//user
 	app.POST("/user/createUser", userRoutes.CreateUser)
+	app.POST("/user/deleteUser", userRoutes.DeleteUser)
 	app.POST("/user/login", userRoutes.Login)
 	app.POST("/user/loginFacebook", userRoutes.LoginFacebook)
 

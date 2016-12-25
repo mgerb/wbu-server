@@ -214,6 +214,7 @@ func DeleteGroup(userID string, groupID string) error {
 	pipe.Del(groupModel.GROUP_MEMBERS(groupID))
 	pipe.Del(groupModel.GROUP_MESSAGES(groupID))
 	pipe.Del(groupModel.GROUP_GEO(groupID))
+	pipe.HIncrBy(userModel.USER_HASH(userID), "adminGroupCount", -1)
 
 	_, err := pipe.Exec()
 

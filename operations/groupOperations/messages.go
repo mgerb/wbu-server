@@ -28,11 +28,6 @@ func StoreUserGroupMessages(groupID string, userID string, message string) error
 		local oneMonth = 2592000
 		
 		
-		--check if user exists in group
-		if not redis.call("HGET", groupIDKey, userID) then
-			return redis.error_reply("You are not in this group")	
-		end
-		
 		local fullName = redis.call("HGET", userIDKey, "fullName")
 		
 		-- get user full name
@@ -40,13 +35,18 @@ func StoreUserGroupMessages(groupID string, userID string, message string) error
 			return redis.error_reply("User does not exist")	
 		end
 		
+		--check if user exists in group
+		if redis.call("HEXISTS", groupIDKey, userID) == 0 then
+			return redis.error_reply("Invalid permissions.")
+		end
+		
 		local fullMessage = userID .. "/" .. fullName .. "/" .. timeStamp .. "/" .. message
 		
 		-- get all the members in the group
-		local members = redis.call("HGETALL", groupIDKey)
+		local members = redis.call("HKEYS", groupIDKey)
 		
 		-- cycle through each key in the group member hash
-		for i = 1, #members, 2 do
+		for i = 1, #members do
 			redis.call("SADD", userGrpMsgKey  .. members[i] .. ":" .. groupID, fullMessage)
 			-- reset the expire time for each message
 			redis.call("EXPIRE", userGrpMsgKey  .. members[i] .. ":" .. groupID, oneMonth)

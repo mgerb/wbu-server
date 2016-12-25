@@ -2,10 +2,12 @@ package userOperations
 
 import (
 	"errors"
+	redis "gopkg.in/redis.v5"
 	"regexp"
 	"strconv"
 
 	"../../db"
+	"../../model/groupModel"
 	"../../model/userModel"
 	"../../utils/regex"
 	"../../utils/tokens"
@@ -139,6 +141,64 @@ func LoginFacebook(accessToken string) (map[string]interface{}, error) {
 		"jwt":             token,
 		"lastRefreshTime": lastRefreshTime,
 	}, err_token
+}
+
+func DeleteUser(userID string) error {
+
+	luaScript := `
+		local userID = ARGV[1]
+		local userGrpMsgKey = ARGV[2]
+		local groupMemKey = ARGV[3]
+		local userHashKey = KEYS[1]
+		local userIDKey = KEYS[2]
+		local userGroupsKey = KEYS[3]
+		local userGroupInvitesKey = KEYS[4]
+		
+		-- check if user exists
+		if redis.call("EXISTS", userHashKey) == 0 then
+			return redis.error_reply("Invalid user.")	
+		end
+		
+		-- check if user owns any groups
+		if redis.call("HGET", userHashKey, "adminGroupCount") ~= "0" then
+			return redis.error_reply("Admin group count not 0.")	
+		end
+		
+		-- get users email from user hash
+		local userEmail = redis.call("HGET", userHashKey, "email")
+		
+		-- key deletes
+		redis.call("DEL", userHashKey)
+		redis.call("DEL", userGroupsKey)
+		redis.call("DEL", userGroupInvitesKey)
+		redis.call("HDEL", userIDKey, userEmail)
+		
+		-- get groupID's from user group list
+		local userGroupList = redis.call("HKEYS", userGroupsKey)
+		
+		for i = 1, #userGroupList do
+			-- delete user group messages
+			redis.call("DEL", userGrpMsgKey .. userID .. userGroupList[i])
+			-- delete user from group
+			redis.call("HDEL", groupMemKey .. userGroupList[i], userID)
+		end
+		--
+		
+		return "Success"
+	`
+
+	script := redis.NewScript(luaScript)
+
+	return script.Run(db.Client, []string{
+		userModel.USER_HASH(userID),
+		userModel.USER_ID(),
+		userModel.USER_GROUPS(userID),
+		userModel.USER_GROUP_INVITES(userID),
+	},
+		userID,
+		userModel.USER_GROUP_MESSAGE_KEY(),
+		groupModel.GROUP_MEMBERS_KEY(),
+	).Err()
 }
 
 //GetUserGroups - get all the groups the user exists in
