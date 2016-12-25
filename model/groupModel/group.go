@@ -26,6 +26,10 @@ func GROUP_MEMBERS(s string) string {
 	return grMem + s
 }
 
+func GROUP_MEMBERS_KEY() string {
+	return grMem
+}
+
 func GROUP_MESSAGES(s string) string {
 	return grMsg + s
 }

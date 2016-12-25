@@ -5,7 +5,11 @@ import (
 	"regexp"
 	"strconv"
 
+	"../lua"
+	redis "gopkg.in/redis.v5"
+
 	"../../db"
+	"../../model/groupModel"
 	"../../model/userModel"
 	"../../utils/regex"
 	"../../utils/tokens"
@@ -139,6 +143,24 @@ func LoginFacebook(accessToken string) (map[string]interface{}, error) {
 		"jwt":             token,
 		"lastRefreshTime": lastRefreshTime,
 	}, err_token
+}
+
+func DeleteUser(userID string) error {
+
+	luaScript := lua.Use("DeleteUser.lua")
+
+	script := redis.NewScript(luaScript)
+
+	return script.Run(db.Client, []string{
+		userModel.USER_HASH(userID),
+		userModel.USER_ID(),
+		userModel.USER_GROUPS(userID),
+		userModel.USER_GROUP_INVITES(userID),
+	},
+		userID,
+		userModel.USER_GROUP_MESSAGE_KEY(),
+		groupModel.GROUP_MEMBERS_KEY(),
+	).Err()
 }
 
 //GetUserGroups - get all the groups the user exists in

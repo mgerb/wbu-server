@@ -52,7 +52,21 @@ func CreateUser(ctx echo.Context) error {
 
 	switch err {
 	case nil:
-		return ctx.JSON(200, response.Json("Account Created.", response.SUCCESS))
+		return ctx.JSON(200, response.Json("Account created.", response.SUCCESS))
+	default:
+		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
+	}
+}
+
+//DeleteUser - deletes all user information based on their userID
+func DeleteUser(ctx echo.Context) error {
+	userID := ctx.Get("userID").(string)
+
+	err := userOperations.DeleteUser(userID)
+
+	switch err {
+	case nil:
+		return ctx.JSON(200, response.Json("Account deleted.", response.SUCCESS))
 	default:
 		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
 	}

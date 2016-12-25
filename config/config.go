@@ -1,14 +1,14 @@
 package config
 
 import (
+	"../operations/lua"
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/labstack/echo/engine"
 	"io/ioutil"
 	"log"
 	"os"
-
-	"github.com/labstack/echo/engine"
 )
 
 var Config configStruct
@@ -28,6 +28,7 @@ type configStruct struct {
 func Init() {
 	readConfigFile()
 	parseFlags()
+	lua.Init()
 }
 
 func readConfigFile() {
