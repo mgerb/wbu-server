@@ -8,6 +8,7 @@ const (
 	grMem   = "grMem:"  //hash - containing members for each group
 	grMsg   = "grMsg:"  //list containing messages for each group id/username/message/timestamp
 	grGeo   = "grGeo:"  //geo set for store user locations for each group
+	grLoc   = "grLoc:"  //hash - store last location for each user in group
 )
 
 func GROUP_KEY_STORE() string {
@@ -36,6 +37,14 @@ func GROUP_MESSAGES(s string) string {
 
 func GROUP_GEO(s string) string {
 	return grGeo + s
+}
+
+func GROUP_LOCATIONS(s string) string {
+	return grLoc + s
+}
+
+func GROUP_LOCATIONS_KEY() string {
+	return grLoc
 }
 
 func GROUP_HASH_MAP(groupName string, owner string) map[string]string {

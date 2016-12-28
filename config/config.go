@@ -62,5 +62,7 @@ func parseFlags() {
 	if *boolPtr {
 		fmt.Println("Starting production mode...")
 		Flags.Production = true
+	} else {
+		fmt.Println("Starting development mode...")
 	}
 }

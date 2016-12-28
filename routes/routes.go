@@ -21,7 +21,7 @@ func RegisterRoutes(app *echo.Echo) {
 	app.GET("/user/refreshJWT", userRoutes.RefreshJWT)
 
 	//groups
-	app.GET("/group/members/:groupID", groupRoutes.GetMembers)
+	app.GET("/group/members/:groupID", groupRoutes.GetGroupMembers)
 	app.GET("/group/messages/:groupID", groupRoutes.GetMessages)
 	app.GET("/group/getGeoLocations/:groupID", groupRoutes.GetGeoLocations)
 

@@ -12,7 +12,6 @@ import (
 
 //ApplyMiddleware - applies middleware to iris framework
 func ApplyMiddleware(app *echo.Echo) {
-	//app.Use(logger.New())
 	app.Use(checkJWT)
 
 	if !config.Flags.Production {
@@ -20,7 +19,6 @@ func ApplyMiddleware(app *echo.Echo) {
 	}
 }
 
-//TODO - jwt refreshing
 //define custom JWT middleware
 func checkJWT(next echo.HandlerFunc) echo.HandlerFunc {
 
@@ -28,12 +26,7 @@ func checkJWT(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(ctx echo.Context) error {
 		path := ctx.Request().URL().Path()
 
-		//routes to skip authentication
-		switch path {
-		case "/user/loginFacebook",
-			"/user/login",
-			"/user/createUser",
-			"/test":
+		if bypassRoutes(path) {
 			return next(ctx)
 		}
 
@@ -59,18 +52,40 @@ func checkJWT(next echo.HandlerFunc) echo.HandlerFunc {
 					ctx.Set("userID", userID.(string))
 					ctx.Set("fullName", fullName.(string))
 				} else {
-					return ctx.JSON(500, response.Json("Token claims error.", response.INTERNAL_ERROR))
+					return ctx.JSON(500, response.Json("Token claims error.", response.INVALID_AUTHENTICATION))
 				}
 
 				return next(ctx)
 			}
-			return ctx.JSON(500, response.Json("Invalid authentication.", response.INTERNAL_ERROR))
+			return ctx.JSON(500, response.Json("Invalid authentication.", response.INVALID_AUTHENTICATION))
 
 		default:
 			log.Println(err.Error())
-			return ctx.JSON(500, response.Json("Invalid token.", response.INTERNAL_ERROR))
+			return ctx.JSON(500, response.Json("Invalid token.", response.INVALID_AUTHENTICATION))
 
 		}
 	}
 
+}
+
+var prodRoutes = map[string]bool{
+	"/user/loginFacebook": true,
+}
+
+var devRoutes = map[string]bool{
+	"/user/loginFacebook": true,
+	"/user/login":         true,
+	"/user/createUser":    true,
+	"/test":               true,
+}
+
+// configure routes to bypass the authentication middleware
+func bypassRoutes(path string) bool {
+
+	switch config.Flags.Production {
+	case true:
+		return prodRoutes[path]
+	}
+
+	return devRoutes[path]
 }

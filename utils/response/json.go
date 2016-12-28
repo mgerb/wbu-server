@@ -2,8 +2,9 @@ package response
 
 //error types
 const (
-	INTERNAL_ERROR = 2
-	SUCCESS        = 1
+	SUCCESS                = 1
+	INTERNAL_ERROR         = 2
+	INVALID_AUTHENTICATION = 3
 	//...
 	//...
 )

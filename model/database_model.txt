@@ -21,9 +21,11 @@ group(
     -list of group messages 
     grMsg:<groupID> => [userID/fullName/time/message]  //list of messages for each group
     
-    -geoset of group locations
-    grGeo:<groupID, long, lat, userID/userName/timestamp> => 
+    -geoset of group locations - sorted set
+    grGeo:<groupID>, long, lat [userID/userName/timestamp]
     
+    -hash set of locations for group members - one per user
+    grLoc:<groupID> => [{userID:geoHash/timestamp}]
 )
 
 user(

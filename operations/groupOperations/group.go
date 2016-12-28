@@ -5,10 +5,13 @@ import (
 	"regexp"
 	"strconv"
 
+	"../lua"
+
 	"../../db"
 	"../../model/groupModel"
 	"../../model/userModel"
 	"../../utils/regex"
+	redis "gopkg.in/redis.v5"
 )
 
 //CreateGroup - store userName/password in hash
@@ -55,15 +58,16 @@ func CreateGroup(groupName string, userID string) error {
 }
 
 //GetGroupMembers - returns string array of group members - userID/userName
-func GetMembers(userID string, groupID string) (map[string]string, error) {
+func GetGroupMembers(userID string, groupID string) (interface{}, error) {
 
-	userIsMember := db.Client.HExists(groupModel.GROUP_MEMBERS(groupID), userID).Val()
+	script := redis.NewScript(lua.Use("GetGroupMembers.lua"))
 
-	if !userIsMember {
-		return map[string]string{}, errors.New("You are not a member of this group")
-	}
-
-	return db.Client.HGetAll(groupModel.GROUP_MEMBERS(groupID)).Result()
+	return script.Run(db.Client, []string{
+		groupModel.GROUP_HASH(groupID),
+		groupModel.GROUP_MEMBERS(groupID),
+	},
+		userID,
+	).Result()
 }
 
 func InviteToGroup(groupOwnerID string, groupID string, invUserID string) error {
@@ -195,28 +199,20 @@ func LeaveGroup(userID string, groupID string) error {
 
 func DeleteGroup(userID string, groupID string) error {
 
-	groupHash := db.Client.HGetAll(groupModel.GROUP_HASH(groupID)).Val()
+	script := redis.NewScript(lua.Use("DeleteGroup.lua"))
 
-	groupName := groupHash["groupName"]
-	groupOwner := groupHash["owner"]
-
-	if groupOwner != userID {
-		return errors.New("You are not the owner of this group.")
-	}
-
-	pipe := db.Client.Pipeline()
-	defer pipe.Close()
-
-	if groupName != "" {
-		pipe.HDel(groupModel.GROUP_ID(), groupName)
-	}
-
-	pipe.Del(groupModel.GROUP_MEMBERS(groupID))
-	pipe.Del(groupModel.GROUP_MESSAGES(groupID))
-	pipe.Del(groupModel.GROUP_GEO(groupID))
-	pipe.HIncrBy(userModel.USER_HASH(userID), "adminGroupCount", -1)
-
-	_, err := pipe.Exec()
-
-	return err
+	return script.Run(db.Client, []string{
+		userModel.USER_HASH(userID),
+		groupModel.GROUP_ID(),
+		groupModel.GROUP_HASH(groupID),
+		groupModel.GROUP_MEMBERS(groupID),
+		groupModel.GROUP_MESSAGES(groupID),
+		groupModel.GROUP_GEO(groupID),
+		groupModel.GROUP_LOCATIONS(groupID),
+	},
+		userID,
+		groupID,
+		userModel.USER_GROUPS_KEY(),
+		userModel.USER_GROUP_MESSAGES_KEY(),
+	).Err()
 }

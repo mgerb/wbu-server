@@ -147,9 +147,7 @@ func LoginFacebook(accessToken string) (map[string]interface{}, error) {
 
 func DeleteUser(userID string) error {
 
-	luaScript := lua.Use("DeleteUser.lua")
-
-	script := redis.NewScript(luaScript)
+	script := redis.NewScript(lua.Use("DeleteUser.lua"))
 
 	return script.Run(db.Client, []string{
 		userModel.USER_HASH(userID),
@@ -158,8 +156,9 @@ func DeleteUser(userID string) error {
 		userModel.USER_GROUP_INVITES(userID),
 	},
 		userID,
-		userModel.USER_GROUP_MESSAGE_KEY(),
+		userModel.USER_GROUP_MESSAGES_KEY(),
 		groupModel.GROUP_MEMBERS_KEY(),
+		groupModel.GROUP_LOCATIONS_KEY(),
 	).Err()
 }
 

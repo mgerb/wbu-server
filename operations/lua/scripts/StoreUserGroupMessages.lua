@@ -1,10 +1,12 @@
 local groupIDKey = KEYS[1]
 local userIDKey = KEYS[2]
-local userGrpMsgKey = ARGV[1]
+
+local userGrpMsgKeyPartial = ARGV[1]
 local userID = ARGV[2]
 local groupID = ARGV[3]
 local timeStamp = ARGV[4]
 local message = ARGV[5]
+
 local oneMonth = 2592000
 
 
@@ -27,9 +29,9 @@ local members = redis.call("HKEYS", groupIDKey)
 
 -- cycle through each key in the group member hash
 for i = 1, #members do
-	redis.call("SADD", userGrpMsgKey  .. members[i] .. ":" .. groupID, fullMessage)
+	redis.call("SADD", userGrpMsgKeyPartial .. members[i] .. ":" .. groupID, fullMessage)
 	-- reset the expire time for each message
-	redis.call("EXPIRE", userGrpMsgKey  .. members[i] .. ":" .. groupID, oneMonth)
+	redis.call("EXPIRE", userGrpMsgKeyPartial .. members[i] .. ":" .. groupID, oneMonth)
 end
 
 return "Success"
