@@ -1,10 +1,11 @@
 package groupOperations
 
 import (
-	"../lua"
 	"errors"
 	"regexp"
 	"strconv"
+
+	"../lua"
 
 	"../../db"
 	"../../model/groupModel"
@@ -57,15 +58,16 @@ func CreateGroup(groupName string, userID string) error {
 }
 
 //GetGroupMembers - returns string array of group members - userID/userName
-func GetMembers(userID string, groupID string) (map[string]string, error) {
+func GetGroupMembers(userID string, groupID string) (interface{}, error) {
 
-	userIsMember := db.Client.HExists(groupModel.GROUP_MEMBERS(groupID), userID).Val()
+	script := redis.NewScript(lua.Use("GetGroupMembers.lua"))
 
-	if !userIsMember {
-		return map[string]string{}, errors.New("You are not a member of this group")
-	}
-
-	return db.Client.HGetAll(groupModel.GROUP_MEMBERS(groupID)).Result()
+	return script.Run(db.Client, []string{
+		groupModel.GROUP_HASH(groupID),
+		groupModel.GROUP_MEMBERS(groupID),
+	},
+		userID,
+	).Result()
 }
 
 func InviteToGroup(groupOwnerID string, groupID string, invUserID string) error {

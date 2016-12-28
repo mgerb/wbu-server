@@ -21,11 +21,11 @@ func CreateGroup(ctx echo.Context) error {
 	}
 }
 
-func GetMembers(ctx echo.Context) error {
+func GetGroupMembers(ctx echo.Context) error {
 	userID := ctx.Get("userID").(string)
 	groupID := ctx.Param("groupID")
 
-	members, err := groupOperations.GetMembers(userID, groupID)
+	members, err := groupOperations.GetGroupMembers(userID, groupID)
 
 	switch err {
 	case nil:
