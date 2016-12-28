@@ -1,6 +1,7 @@
 package lua
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
 )
@@ -26,6 +27,7 @@ func Init() {
 		file[f.Name()] = string(fileContents)
 	}
 
+	fmt.Println("Lua scripts loaded into memory...")
 }
 
 //Use - return lua script to use

@@ -1,10 +1,13 @@
-local userID = ARGV[1]
-local userGrpMsgKey = ARGV[2]
-local groupMemKey = ARGV[3]
 local userHashKey = KEYS[1]
 local userIDKey = KEYS[2]
 local userGroupsKey = KEYS[3]
 local userGroupInvitesKey = KEYS[4]
+
+local userID = ARGV[1]
+
+local userGrpMsgKeyPartial = ARGV[2]
+local groupMemKeyPartial = ARGV[3]
+local groupLocationsKeyPartial = ARGV[4]
 
 -- check if user exists
 if redis.call("EXISTS", userHashKey) == 0 then
@@ -30,9 +33,11 @@ local userGroupList = redis.call("HKEYS", userGroupsKey)
 
 for i = 1, #userGroupList do
 	-- delete user group messages
-	redis.call("DEL", userGrpMsgKey .. userID .. userGroupList[i])
+	redis.call("DEL", userGrpMsgKeyPartial .. userID .. ":" .. userGroupList[i])
 	-- delete user from group
-	redis.call("HDEL", groupMemKey .. userGroupList[i], userID)
+	redis.call("HDEL", groupMemKeyPartial .. userGroupList[i], userID)
+	-- delete user from all group locations
+	redis.call("HDEL", groupLocationsKeyPartial .. userGroupList[i], userID)
 end
 --
 

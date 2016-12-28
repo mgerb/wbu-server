@@ -18,5 +18,11 @@ func Connect(address string, password string) {
 
 	Client = redis.NewClient(options)
 
-	fmt.Println("Database configured")
+	test := Client.Ping()
+	if test.Val() == "PONG" {
+		fmt.Println("Database connected...")
+	} else {
+		fmt.Println("Database connection failed!")
+		fmt.Println(test.Err())
+	}
 }

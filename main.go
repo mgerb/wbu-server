@@ -14,7 +14,7 @@ func main() {
 	//read config files/flags
 	config.Init()
 
-	//connect to database
+	//connect to database and set up client
 	db.Connect(config.Config.DatabaseAddress, config.Config.DatabasePassword)
 
 	app := echo.New()

@@ -23,6 +23,10 @@ func USER_HASH(s string) string {
 	return uHash + s
 }
 
+func USER_GROUPS_KEY() string {
+	return uGrps
+}
+
 func USER_GROUPS(s string) string {
 	return uGrps + s
 }
@@ -35,16 +39,16 @@ func USER_GROUP_MESSAGES(userID string, groupID string) string {
 	return uGrpMsg + userID + ":" + groupID
 }
 
-func USER_GROUP_MESSAGE_KEY() string {
+func USER_GROUP_MESSAGES_KEY() string {
 	return uGrpMsg
 }
 
 func GetUserID(s string) string {
-	return "uID:" + s
+	return "u" + s
 }
 
 func GetUserID_FB(s string) string {
-	return "fbID:" + s
+	return "fb" + s
 }
 
 func USER_HASH_MAP(email string, password string, adminGroupCount string, fullName string) map[string]string {

@@ -20,12 +20,10 @@ func StoreUserGroupMessages(groupID string, userID string, message string) error
 		return errors.New("Invalid message length.")
 	}
 
-	luaScript := lua.Use("StoreUserGroupMessages.lua")
-
-	script := redis.NewScript(luaScript)
+	script := redis.NewScript(lua.Use("StoreUserGroupMessages.lua"))
 
 	return script.Run(db.Client, []string{groupModel.GROUP_MEMBERS(groupID), userModel.USER_HASH(userID)},
-		userModel.USER_GROUP_MESSAGE_KEY(),
+		userModel.USER_GROUP_MESSAGES_KEY(),
 		userID,
 		groupID,
 		time.Now().Unix(),
@@ -34,9 +32,8 @@ func StoreUserGroupMessages(groupID string, userID string, message string) error
 
 //GetUserGroupMessages - return user messages for a group
 func GetUserGroupMessages(groupID string, userID string) (interface{}, error) {
-	luaScript := lua.Use("GetUserGroupMessages.lua")
 
-	script := redis.NewScript(luaScript)
+	script := redis.NewScript(lua.Use("GetUserGroupMessages.lua"))
 
 	return script.Run(db.Client, []string{userModel.USER_GROUP_MESSAGES(userID, groupID)}, 0).Result()
 }

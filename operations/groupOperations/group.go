@@ -1,6 +1,7 @@
 package groupOperations
 
 import (
+	"../lua"
 	"errors"
 	"regexp"
 	"strconv"
@@ -9,6 +10,7 @@ import (
 	"../../model/groupModel"
 	"../../model/userModel"
 	"../../utils/regex"
+	redis "gopkg.in/redis.v5"
 )
 
 //CreateGroup - store userName/password in hash
@@ -195,28 +197,20 @@ func LeaveGroup(userID string, groupID string) error {
 
 func DeleteGroup(userID string, groupID string) error {
 
-	groupHash := db.Client.HGetAll(groupModel.GROUP_HASH(groupID)).Val()
+	script := redis.NewScript(lua.Use("DeleteGroup.lua"))
 
-	groupName := groupHash["groupName"]
-	groupOwner := groupHash["owner"]
-
-	if groupOwner != userID {
-		return errors.New("You are not the owner of this group.")
-	}
-
-	pipe := db.Client.Pipeline()
-	defer pipe.Close()
-
-	if groupName != "" {
-		pipe.HDel(groupModel.GROUP_ID(), groupName)
-	}
-
-	pipe.Del(groupModel.GROUP_MEMBERS(groupID))
-	pipe.Del(groupModel.GROUP_MESSAGES(groupID))
-	pipe.Del(groupModel.GROUP_GEO(groupID))
-	pipe.HIncrBy(userModel.USER_HASH(userID), "adminGroupCount", -1)
-
-	_, err := pipe.Exec()
-
-	return err
+	return script.Run(db.Client, []string{
+		userModel.USER_HASH(userID),
+		groupModel.GROUP_ID(),
+		groupModel.GROUP_HASH(groupID),
+		groupModel.GROUP_MEMBERS(groupID),
+		groupModel.GROUP_MESSAGES(groupID),
+		groupModel.GROUP_GEO(groupID),
+		groupModel.GROUP_LOCATIONS(groupID),
+	},
+		userID,
+		groupID,
+		userModel.USER_GROUPS_KEY(),
+		userModel.USER_GROUP_MESSAGES_KEY(),
+	).Err()
 }
