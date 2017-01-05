@@ -2,11 +2,10 @@ package response
 
 //error types
 const (
-	SUCCESS                = 1
-	INTERNAL_ERROR         = 2
-	INVALID_AUTHENTICATION = 3
-	//...
-	//...
+	SUCCESS                int    = 1
+	INTERNAL_ERROR         int    = 2
+	INVALID_AUTHENTICATION int    = 3
+	JSON_HEADER            string = "application/json; charset=utf-8"
 )
 
 //Json - return json string for response
