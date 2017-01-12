@@ -29,7 +29,9 @@ func GetGroupMembers(ctx echo.Context) error {
 
 	switch err {
 	case nil:
-		return ctx.JSON(200, members)
+		//maybe change this end point in future
+		//return ctx.JSON(200, members)
+		return ctx.Blob(200, response.JSON_HEADER, []byte(members.(string)))
 	default:
 		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
 	}

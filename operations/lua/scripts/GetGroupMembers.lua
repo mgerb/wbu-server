@@ -12,25 +12,19 @@ end
 -- get group owner
 local groupOwner = redis.call("HGET", groupHashKey, "owner")
 
+-- get all group members
 local groupMembers = redis.call("HGETALL", groupMembersKey)
 
-local t = {}
-local userIsOwner = false
+local resultSet = {}
 
-for i = 2, #groupMembers, 2 do
+for i = 1, #groupMembers, 2 do
 
-    if groupOwner == groupMembers[i] then
-        userIsOwner = true
-    end
-
-    t[#t+1] = { 
+    resultSet[#resultSet+1] = { 
         userID = groupMembers[i],
         fullName = groupMembers[i+1],
-        owner = userIsOwner
+        owner = groupOwner == groupMembers[i]
     }
-
-    userIsOwner = false
 
 end
 
-return cjson.encode({ owner = groupOwner, members = t })
+return cjson.encode(resultSet)
