@@ -16,6 +16,7 @@ func main() {
 
 	//connect to database and set up client
 	db.Connect(config.Config.DatabaseAddress, config.Config.DatabasePassword)
+	defer db.SQL.Close()
 
 	app := echo.New()
 	routes.RegisterRoutes(app)

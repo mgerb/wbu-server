@@ -1,15 +1,40 @@
 package db
 
 import (
+	"database/sql"
 	"fmt"
+	"log"
 
+	_ "github.com/mattn/go-sqlite3"
 	redis "gopkg.in/redis.v5"
 )
 
+// Client - redis client
 var Client *redis.Client
 
-func Connect(address string, password string) {
+// SQL - sqlite database connection
+var SQL *sql.DB
 
+func Connect(address string, password string) {
+	var err error
+	// start sqlite database
+	SQL, err = sql.Open("sqlite3", "./database.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	stmt := `create table if not exists test (id integer not null primary key autoincrement, name text);`
+
+	_, err = SQL.Exec(stmt)
+
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+
+	InitializeDatabase()
+
+	// REMOVE LATER
 	options := &redis.Options{
 		Addr:     address,
 		Password: password,
@@ -24,5 +49,72 @@ func Connect(address string, password string) {
 	} else {
 		fmt.Println("Database connection failed!")
 		fmt.Println(test.Err())
+	}
+	// --------------
+}
+
+// InitializeDatabase - initial database scripts
+func InitializeDatabase() {
+
+	fmt.Println("sqlite startup scripts...")
+
+	sqlStatement := `
+		create table if not exists 'User' (
+			id integer not null primary key autoincrement,
+			username text not null,
+			password text not null,
+			email text not null,
+			fcmToken text,
+			facebookToken text
+		);
+               
+		create table if not exists 'Group' (
+			id integer not null primary key autoincrement,
+			name text not null,
+			owner integer not null,
+			maxMembers integer default 50,
+			inviteOnly integer not null default 1,
+			password text not null,
+            
+			FOREIGN KEY (owner) REFERENCES 'User' (userID)
+		);
+
+		create table if not exists 'Message' (
+			id integer not null primary key autoincrement,
+			userID integer not null,
+			groupID integer not null,
+			content text not null,
+			timestamp integer not null,
+            
+			FOREIGN KEY (userID) REFERENCES 'User' (userID),
+			FOREIGN KEY (groupID) REFERENCES 'Group' (groupID)
+		);
+
+		create table if not exists 'GroupUsers' (
+			groupID integer not null primary key,
+			userID integer not null,
+			timestamp integer not null,
+            
+			FOREIGN KEY (userID) REFERENCES 'User' (userID),
+			FOREIGN KEY (groupID) REFERENCES 'Group' (groupID)
+		);
+			
+		create table if not exists 'GeoLocation' (
+			id integer not null primary key autoincrement,
+			userID integer not null,
+			groupID integer not null,
+			latitude real not null,
+			longitude real not null,
+			timestamp integer not null,
+			
+			FOREIGN KEY (userID) REFERENCES 'User' (userID),
+			FOREIGN KEY (groupID) REFERENCES 'Group' (groupID)
+		);
+	`
+
+	_, err := SQL.Exec(sqlStatement)
+
+	if err != nil {
+		log.Println(err)
 	}
 }
