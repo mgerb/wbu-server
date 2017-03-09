@@ -13,12 +13,13 @@ const (
 	expirationTime int64 = 60 * 24 * 60 * 60 //60 days
 )
 
-func GetJWT(email string, userID string, fullName string) (string, int64, error) {
+func GetJWT(email string, userID string, firstName string, lastName string) (string, int64, error) {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"email":           email,
 		"userID":          userID,
-		"fullName":        fullName,
+		"firstName":       firstName,
+		"lastName":        lastName,
 		"lastRefreshTime": time.Now().Unix() + expirationTime,
 	})
 

@@ -23,15 +23,6 @@ func Connect(address string, password string) {
 		log.Fatal(err)
 	}
 
-	stmt := `create table if not exists test (id integer not null primary key autoincrement, name text);`
-
-	_, err = SQL.Exec(stmt)
-
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
-
 	InitializeDatabase()
 
 	// REMOVE LATER
@@ -61,11 +52,10 @@ func InitializeDatabase() {
 	sqlStatement := `
 		create table if not exists 'User' (
 			id integer not null primary key autoincrement,
-			username text not null,
-			password text not null,
 			email text not null,
-			fcmToken text,
-			facebookToken text
+			password text not null,
+			firstName text not null,
+			lastName text not null
 		);
                
 		create table if not exists 'Group' (
@@ -109,6 +99,14 @@ func InitializeDatabase() {
 			
 			FOREIGN KEY (userID) REFERENCES 'User' (userID),
 			FOREIGN KEY (groupID) REFERENCES 'Group' (groupID)
+		);
+
+		create table if not exists 'Tokens' (
+			userID integer not null primary key,
+			fcmToken string,
+			facebookToken string,
+			
+			FOREIGN KEY (userID) REFERENCES 'User' (userID)
 		);
 	`
 

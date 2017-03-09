@@ -11,6 +11,19 @@ const (
 	uGrpMsg = "uGrpMsg:" //set for user messages for each group
 )
 
+// User - user model
+type User struct {
+	Email          string `json:"email"`
+	UserID         string `json:"userID"`
+	FirstName      string `json:"firstName"`
+	LastName       string `json:"lastName"`
+	Password       string `json:"-"`
+	FcmToken       string `json:"fcmToken,omitempty"`
+	FacebookToken  string `json:"facebookToken,omitempty"`
+	Jwt            string `json:"jwt"`
+	LastJwtRefresh int64  `json:"lastJwtRefresh"`
+}
+
 func USER_KEY_STORE() string {
 	return uKeys
 }

@@ -2,8 +2,8 @@ package userOperations
 
 import (
 	"errors"
+	"log"
 	"regexp"
-	"strconv"
 
 	"../lua"
 	redis "gopkg.in/redis.v5"
@@ -18,12 +18,14 @@ import (
 )
 
 //CreateUser - store userName/password in hash
-func CreateUser(email string, password string, fullName string) error {
+func CreateUser(email string, password string, firstName string, lastName string) error {
 
-	//validation password
+	//validate password
 	if !regexp.MustCompile(regex.PASSWORD).MatchString(password) {
 		return errors.New("Invalid password.")
 	}
+
+	passwordHash := generateHash(password)
 
 	//validate email
 	if !regexp.MustCompile(regex.EMAIL).MatchString(email) {
@@ -31,72 +33,67 @@ func CreateUser(email string, password string, fullName string) error {
 	}
 
 	//validate full name
-	if !regexp.MustCompile(regex.FULL_NAME).MatchString(fullName) {
+	/* TODO Validate names
+	if !regexp.MustCompile(regex.FULL_NAME).MatchString(firstName + " " + lastName) {
 		return errors.New("Invalid name.")
 	}
+	*/
 
-	//check if the email already exists in redis
-	emailExists := db.Client.HExists(userModel.USER_ID(), email).Val()
-
-	if emailExists {
-		return errors.New("That email is already taken.")
+	tx, err := db.SQL.Begin()
+	if err != nil {
+		log.Println(err)
+		return errors.New("Database error.")
 	}
 
-	//get a new user id from the id pool
-	temp, _ := db.Client.Incr(userModel.USER_KEY_STORE()).Result()
-	newID := strconv.FormatInt(temp, 10)
+	defer tx.Commit()
 
-	//prepend user id with prefix
-	newID = userModel.GetUserID(newID)
+	//check if the email already exists
+	var userExists bool
+	err = tx.QueryRow(`SELECT EXISTS(SELECT 1 FROM "User" WHERE email = ?);`, email).Scan(&userExists)
 
-	pipe := db.Client.Pipeline()
-	defer pipe.Close()
+	if err != nil || userExists {
+		return errors.New("User already exists")
+	}
+	log.Println(lastName)
+	_, err = tx.Exec(`INSERT INTO "User" (email, password, firstName, lastName) VALUES (?, ?, ?, ?);`, email, passwordHash, firstName, lastName, "test")
 
-	//map email to user id
-	pipe.HSet(userModel.USER_ID(), email, newID)
+	if err != nil {
+		log.Println(err)
+		return errors.New("Database error.")
+	}
 
-	//set user object in redis
-	pipe.HMSet(userModel.USER_HASH(newID), userModel.USER_HASH_MAP(email, generateHash(password), "0", fullName))
-
-	_, err := pipe.Exec()
-
-	return err
+	return nil
 }
 
 //Login - check if password and userName are correct
-func Login(email string, password string) (map[string]interface{}, error) {
-	userID, err := db.Client.HGet(userModel.USER_ID(), email).Result()
+func Login(email string, password string) (*userModel.User, error) {
+
+	// new user struct
+	newUser := &userModel.User{}
+
+	// get user information
+	err := db.SQL.QueryRow(`SELECT id, email, firstName, lastName, password FROM "User" WHERE EMAIL = ?;`, email).Scan(&newUser.UserID, &newUser.Email, &newUser.FirstName, &newUser.LastName, &newUser.Password)
 
 	if err != nil {
-		return map[string]interface{}{}, errors.New("User does not exist.")
+		log.Println(err)
+		return newUser, errors.New("User does not exist.")
 	}
 
-	result, err_password := db.Client.HGetAll(userModel.USER_HASH(userID)).Result()
-
-	if err_password != nil {
-		return map[string]interface{}{}, errors.New("Error retrieving account information.")
+	if bcrypt.CompareHashAndPassword([]byte(newUser.Password), []byte(password)) != nil {
+		return &userModel.User{}, errors.New("Invalid password.")
 	}
 
-	savedPassword := result["password"]
-	fullName := result["fullName"]
+	token, lastJwtRefresh, errToken := tokens.GetJWT(newUser.Email, newUser.UserID, newUser.FirstName, newUser.LastName)
 
-	if len(savedPassword) < 5 {
-		return map[string]interface{}{}, errors.New("Invalid account")
+	if errToken != nil {
+		log.Println(err)
+		return &userModel.User{}, errors.New("Token error.")
 	}
 
-	if bcrypt.CompareHashAndPassword([]byte(savedPassword), []byte(password)) != nil {
-		return map[string]interface{}{}, errors.New("Invalid password.")
-	}
+	newUser.Jwt = token
+	newUser.LastJwtRefresh = lastJwtRefresh
 
-	token, lastRefreshTime, err_token := tokens.GetJWT(email, userID, fullName)
-
-	return map[string]interface{}{
-		"email":           email,
-		"userID":          userID,
-		"fullName":        fullName,
-		"jwt":             token,
-		"lastRefreshTime": lastRefreshTime,
-	}, err_token
+	return newUser, nil
 }
 
 func LoginFacebook(accessToken string) (map[string]interface{}, error) {
@@ -134,7 +131,7 @@ func LoginFacebook(accessToken string) (map[string]interface{}, error) {
 		}
 	}
 
-	token, lastRefreshTime, err_token := tokens.GetJWT(email, userID, fullName)
+	token, lastRefreshTime, err_token := tokens.GetJWT(email, userID, fullName, "TODO REMOVE THIS")
 
 	return map[string]interface{}{
 		"email":           email,

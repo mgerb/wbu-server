@@ -46,9 +46,10 @@ func HandleTest(ctx echo.Context) error {
 func CreateUser(ctx echo.Context) error {
 	email := ctx.FormValue("email")
 	password := ctx.FormValue("password")
-	fullName := ctx.FormValue("fullName")
+	firstName := ctx.FormValue("firstName")
+	lastName := ctx.FormValue("lastName")
 
-	err := userOperations.CreateUser(email, password, fullName)
+	err := userOperations.CreateUser(email, password, firstName, lastName)
 
 	switch err {
 	case nil:
@@ -132,9 +133,10 @@ func GetInvites(ctx echo.Context) error {
 func RefreshJWT(ctx echo.Context) error {
 	email := ctx.Get("email").(string)
 	userID := ctx.Get("userID").(string)
-	fullName := ctx.Get("fullName").(string)
+	firstName := ctx.Get("firstName").(string)
+	lastName := ctx.Get("lastName").(string)
 
-	token, lastRefreshTime, err := tokens.GetJWT(email, userID, fullName)
+	token, lastRefreshTime, err := tokens.GetJWT(email, userID, firstName, lastName)
 
 	switch err {
 	case nil:
