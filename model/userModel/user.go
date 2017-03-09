@@ -13,15 +13,15 @@ const (
 
 // User - user model
 type User struct {
-	Email          string `json:"email"`
-	UserID         string `json:"userID"`
-	FirstName      string `json:"firstName"`
-	LastName       string `json:"lastName"`
+	ID             string `json:"id,omitempty"`
+	Email          string `json:"email,omitempty"`
+	FirstName      string `json:"firstName,omitempty"`
+	LastName       string `json:"lastName,omitempty"`
 	Password       string `json:"-"`
 	FcmToken       string `json:"fcmToken,omitempty"`
-	FacebookToken  string `json:"facebookToken,omitempty"`
-	Jwt            string `json:"jwt"`
-	LastJwtRefresh int64  `json:"lastJwtRefresh"`
+	FacebookID     string `json:"facebookID,omitempty"`
+	Jwt            string `json:"jwt,omitempty"`
+	LastJwtRefresh int64  `json:"lastJwtRefresh,omitempty"`
 }
 
 func USER_KEY_STORE() string {

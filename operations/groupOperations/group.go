@@ -17,44 +17,35 @@ import (
 //CreateGroup - store userName/password in hash
 func CreateGroup(groupName string, userID string) error {
 
-	//DO VALIDATION
+	// validate group name
 	if !regexp.MustCompile(regex.GROUP_NAME).MatchString(groupName) {
 		return errors.New("Invalid group name.")
 	}
 
-	pipe := db.Client.Pipeline()
-	defer pipe.Close()
-
-	tempFullName := pipe.HGet(userModel.USER_HASH(userID), "fullName")
-	groupExists := pipe.HExists(groupModel.GROUP_ID(), groupName)
-
-	_, err_pipe1 := pipe.Exec()
-
-	if err_pipe1 != nil {
-		return errors.New("Pipe error.")
+	tx, err := db.SQL.Begin()
+	if err != nil {
+		log.Println(err)
+		return errors.New("Database error.")
 	}
 
-	if groupExists.Val() {
+	defer tx.Commit()
+
+	//check if the group already exists
+	var groupExists bool
+	err = tx.QueryRow(`SELECT EXISTS(SELECT 1 FROM "Group" WHERE "name" = ? AND "ownerID" = ?);`, groupName, userID).Scan(&userExists)
+
+	if err != nil || userExists {
 		return errors.New("Group already exists.")
 	}
 
-	fullName := tempFullName.Val()
+	_, err = tx.Exec(`INSERT INTO "Group" (name, ownerID) VALUES (?, ?);`, groupName, ownerID)
 
-	temp, _ := db.Client.Incr(groupModel.GROUP_KEY_STORE()).Result()
-	newID := strconv.FormatInt(temp, 10)
+	if err != nil {
+		log.Println(err)
+		return errors.New("Database error.")
+	}
 
-	pipe.HSet(groupModel.GROUP_ID(), groupName, newID)
-
-	//store group hash
-	pipe.HMSet(groupModel.GROUP_HASH(newID), groupModel.GROUP_HASH_MAP(groupName, userID))
-
-	pipe.HSet(groupModel.GROUP_MEMBERS(newID), userID, fullName)
-	pipe.HSet(userModel.USER_GROUPS(userID), newID, groupName)
-	pipe.HIncrBy(userModel.USER_HASH(userID), "adminGroupCount", 1)
-
-	_, returnError := pipe.Exec()
-
-	return returnError
+	return nil
 }
 
 //GetGroupMembers - returns string array of group members - userID/userName

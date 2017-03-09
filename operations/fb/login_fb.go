@@ -7,7 +7,7 @@ import (
 
 func Me(accessToken string) (map[string]interface{}, error) {
 	return fb.Get("/me", fb.Params{
-		"fields":       "id,name,email",
+		"fields":       "id,first_name,last_name,email",
 		"access_token": accessToken,
 	})
 }

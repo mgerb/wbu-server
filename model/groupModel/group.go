@@ -11,6 +11,15 @@ const (
 	grLoc   = "grLoc:"  //hash - store last location for each user in group
 )
 
+type Group struct {
+	ID          string `json:"id"`
+	name        string `json:"name"`
+	ownerID     string `json:"ownerID"`
+	MemberCount int    `json:"memberCount,omitempty"`
+	Password    string `json:"-"`
+	InviteOnly  bool   `json:"inviteOnly,omitempty"`
+}
+
 func GROUP_KEY_STORE() string {
 	return grKeys
 }

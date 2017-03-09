@@ -4,4 +4,4 @@ tls.key
 tls.crt
 main
 .vscode/
-database.db
+database.db*

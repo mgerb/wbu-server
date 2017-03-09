@@ -50,46 +50,46 @@ func InitializeDatabase() {
 	fmt.Println("sqlite startup scripts...")
 
 	sqlStatement := `
-		create table if not exists 'User' (
+		create table if not exists "User" (
 			id integer not null primary key autoincrement,
-			email text not null,
-			password text not null,
+			email text unique not null,
+			password text default null,
 			firstName text not null,
-			lastName text not null
+			lastName text not null,
+			facebookID text unique default null
 		);
                
-		create table if not exists 'Group' (
+		create table if not exists "Group" (
 			id integer not null primary key autoincrement,
-			name text not null,
-			owner integer not null,
-			maxMembers integer default 50,
-			inviteOnly integer not null default 1,
-			password text not null,
+			name text unique not null,
+			ownerID integer not null,
+			memberCount integer not null default 0,
+			password text default null,
             
-			FOREIGN KEY (owner) REFERENCES 'User' (userID)
+			FOREIGN KEY (ownerID) REFERENCES "User" (userID)
 		);
 
-		create table if not exists 'Message' (
+		create table if not exists "Message" (
 			id integer not null primary key autoincrement,
 			userID integer not null,
 			groupID integer not null,
 			content text not null,
 			timestamp integer not null,
             
-			FOREIGN KEY (userID) REFERENCES 'User' (userID),
-			FOREIGN KEY (groupID) REFERENCES 'Group' (groupID)
+			FOREIGN KEY (userID) REFERENCES "User" (userID),
+			FOREIGN KEY (groupID) REFERENCES "Group" (groupID)
 		);
 
-		create table if not exists 'GroupUsers' (
+		create table if not exists "GroupUsers" (
 			groupID integer not null primary key,
 			userID integer not null,
 			timestamp integer not null,
             
-			FOREIGN KEY (userID) REFERENCES 'User' (userID),
-			FOREIGN KEY (groupID) REFERENCES 'Group' (groupID)
+			FOREIGN KEY (userID) REFERENCES "User" (userID),
+			FOREIGN KEY (groupID) REFERENCES "Group" (groupID)
 		);
 			
-		create table if not exists 'GeoLocation' (
+		create table if not exists "GeoLocation" (
 			id integer not null primary key autoincrement,
 			userID integer not null,
 			groupID integer not null,
@@ -97,16 +97,15 @@ func InitializeDatabase() {
 			longitude real not null,
 			timestamp integer not null,
 			
-			FOREIGN KEY (userID) REFERENCES 'User' (userID),
-			FOREIGN KEY (groupID) REFERENCES 'Group' (groupID)
+			FOREIGN KEY (userID) REFERENCES "User" (userID),
+			FOREIGN KEY (groupID) REFERENCES "Group" (groupID)
 		);
 
-		create table if not exists 'Tokens' (
+		create table if not exists "Tokens" (
 			userID integer not null primary key,
 			fcmToken string,
-			facebookToken string,
 			
-			FOREIGN KEY (userID) REFERENCES 'User' (userID)
+			FOREIGN KEY (userID) REFERENCES "User" (userID)
 		);
 	`
 
