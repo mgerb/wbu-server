@@ -10,8 +10,9 @@ import (
 func CreateGroup(ctx echo.Context) error {
 	userID := ctx.Get("userID").(string)
 	groupName := ctx.FormValue("groupName")
+	password := ctx.FormValue("password")
 
-	err := groupOperations.CreateGroup(groupName, userID)
+	err := groupOperations.CreateGroup(groupName, userID, password)
 
 	switch err {
 	case nil:

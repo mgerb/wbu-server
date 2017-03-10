@@ -45,12 +45,14 @@ func checkJWT(next echo.HandlerFunc) echo.HandlerFunc {
 
 				email, ok_email := claims["email"]
 				userID, ok_userID := claims["userID"]
-				fullName, ok_fullName := claims["fullName"]
+				firstName, ok_firstName := claims["firstName"]
+				lastName, ok_lastName := claims["lastName"]
 
-				if ok_email && ok_userID && ok_fullName {
+				if ok_email && ok_userID && ok_firstName && ok_lastName {
 					ctx.Set("email", email.(string))
 					ctx.Set("userID", userID.(string))
-					ctx.Set("fullName", fullName.(string))
+					ctx.Set("firstName", firstName.(string))
+					ctx.Set("lastName", lastName.(string))
 				} else {
 					return ctx.JSON(500, response.Json("Token claims error.", response.INVALID_AUTHENTICATION))
 				}

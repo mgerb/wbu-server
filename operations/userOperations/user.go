@@ -7,6 +7,7 @@ import (
 
 	"../../db"
 	"../../model/userModel"
+	"../../utils"
 	"../../utils/regex"
 	"../../utils/tokens"
 	"../fb"
@@ -22,31 +23,40 @@ func CreateUser(email string, password string, firstName string, lastName string
 		return errors.New("Invalid password.")
 	}
 
-	passwordHash := generateHash(password)
+	passwordHash, err := utils.GenerateHash(password)
+
+	if err != nil {
+		log.Println(err)
+		return errors.New("Error hashing password")
+	}
 
 	//validate email
 	if !regexp.MustCompile(regex.EMAIL).MatchString(email) {
 		return errors.New("Invalid email.")
 	}
 
+	// validate first/last name
 	if len(firstName+lastName) > 40 {
 		return errors.New("Name is too long")
 	}
 
+	// start sql transaction
 	tx, err := db.SQL.Begin()
 	if err != nil {
 		log.Println(err)
 		return errors.New("Database error.")
 	}
 
+	// commit the transaction when the function returns
 	defer tx.Commit()
 
 	//check if the email already exists
 	var userExists bool
 	err = tx.QueryRow(`SELECT EXISTS(SELECT 1 FROM "User" WHERE "email" = ?);`, email).Scan(&userExists)
 
+	// return err or if email already exists
 	if err != nil || userExists {
-		return errors.New("User already exists")
+		return errors.New("That email is already in use.")
 	}
 
 	_, err = tx.Exec(`INSERT INTO "User" (email, password, firstName, lastName) VALUES (?, ?, ?, ?);`, email, passwordHash, firstName, lastName)
@@ -157,6 +167,39 @@ func createFacebookUser(fbResponse map[string]interface{}) error {
 	return nil
 }
 
+func SearchUserByName(name string) ([]*userModel.User, error) {
+	userList := []*userModel.User{}
+	// get user information
+	log.Println(name)
+	rows, err := db.SQL.Query(`SELECT id, email, firstName, lastName FROM "User" WHERE "firstName" || ' ' || "lastName" LIKE ?;`, "%"+name+"%")
+
+	if err != nil {
+		return userList, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		newUser := &userModel.User{}
+		err := rows.Scan(&newUser.ID, &newUser.Email, &newUser.FirstName, &newUser.LastName)
+
+		if err != nil {
+			log.Println(err)
+			return []*userModel.User{}, errors.New("Database error.")
+		}
+		userList = append(userList, newUser)
+	}
+
+	err = rows.Err()
+
+	if err != nil {
+		log.Println(err)
+		return []*userModel.User{}, errors.New("Row error.")
+	}
+
+	return userList, nil
+}
+
 func DeleteUser(userID string) error {
 	return nil
 }
@@ -168,9 +211,4 @@ func GetGroups(userID string) (map[string]string, error) {
 
 func GetInvites(userID string) (map[string]string, error) {
 	return db.Client.HGetAll(userModel.USER_GROUP_INVITES(userID)).Result()
-}
-
-func generateHash(password string) string {
-	hash, _ := bcrypt.GenerateFromPassword([]byte(password), 0)
-	return string(hash)
 }

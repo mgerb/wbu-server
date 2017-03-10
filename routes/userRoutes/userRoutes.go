@@ -103,6 +103,20 @@ func LoginFacebook(ctx echo.Context) error {
 	}
 }
 
+//CreateUser - create user account - currently takes in userName and password
+func SearchUserByName(ctx echo.Context) error {
+	name := ctx.FormValue("name")
+
+	userList, err := userOperations.SearchUserByName(name)
+
+	switch err {
+	case nil:
+		return ctx.JSON(200, userList)
+	default:
+		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
+	}
+}
+
 func GetGroups(ctx echo.Context) error {
 	userID := ctx.Get("userID").(string)
 

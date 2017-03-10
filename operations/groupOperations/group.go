@@ -2,20 +2,23 @@ package groupOperations
 
 import (
 	"errors"
+	"log"
 	"regexp"
-	"strconv"
 
 	"../lua"
 
 	"../../db"
 	"../../model/groupModel"
 	"../../model/userModel"
+	"../../utils"
 	"../../utils/regex"
 	redis "gopkg.in/redis.v5"
 )
 
 //CreateGroup - store userName/password in hash
-func CreateGroup(groupName string, userID string) error {
+func CreateGroup(groupName string, userID string, password string) error {
+
+	// TODO figure out how to handle blank password with new web framework
 
 	// validate group name
 	if !regexp.MustCompile(regex.GROUP_NAME).MatchString(groupName) {
@@ -32,13 +35,28 @@ func CreateGroup(groupName string, userID string) error {
 
 	//check if the group already exists
 	var groupExists bool
-	err = tx.QueryRow(`SELECT EXISTS(SELECT 1 FROM "Group" WHERE "name" = ? AND "ownerID" = ?);`, groupName, userID).Scan(&userExists)
+	err = tx.QueryRow(`SELECT EXISTS(SELECT 1 FROM "Group" WHERE "name" = ? AND "ownerID" = ?);`, groupName, userID).Scan(&groupExists)
 
-	if err != nil || userExists {
+	if err != nil {
+		log.Println(err)
+		return errors.New("Database error.")
+	} else if groupExists {
 		return errors.New("Group already exists.")
 	}
 
-	_, err = tx.Exec(`INSERT INTO "Group" (name, ownerID) VALUES (?, ?);`, groupName, ownerID)
+	if password != "" {
+		// hash the password before storing in the database
+		passwordHash, err := utils.GenerateHash(password)
+
+		if err != nil {
+			log.Println(err)
+			return errors.New("Error hashing password")
+		}
+
+		_, err = tx.Exec(`INSERT INTO "Group" (name, ownerID, memberCount, password) VALUES (?, ?, ?, ?);`, groupName, userID, 1, passwordHash)
+	} else {
+		_, err = tx.Exec(`INSERT INTO "Group" (name, ownerID, memberCount) VALUES (?, ?, ?);`, groupName, userID, 1)
+	}
 
 	if err != nil {
 		log.Println(err)
@@ -46,6 +64,31 @@ func CreateGroup(groupName string, userID string) error {
 	}
 
 	return nil
+}
+
+// TODO
+func JoinGroupWithPassword(userID string, ownerID string, groupName string, password string) {
+	/*
+		tx, err := db.SQL.Begin()
+		if err != nil {
+			log.Println(err)
+			return errors.New("Database error.")
+		}
+
+		defer tx.Commit()
+
+		//check if the group already exists
+		var groupExists bool
+		err = tx.QueryRow(`SELECT EXISTS(SELECT 1 FROM "Group" WHERE "name" = ? AND "ownerID" = ?);`, groupName, userID).Scan(&groupExists)
+
+		if err != nil {
+			log.Println(err)
+			return errors.New("Database error.")
+		} else if groupExists {
+			return errors.New("Group already exists.")
+		}
+	*/
+
 }
 
 //GetGroupMembers - returns string array of group members - userID/userName

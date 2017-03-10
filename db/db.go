@@ -61,7 +61,7 @@ func InitializeDatabase() {
                
 		create table if not exists "Group" (
 			id integer not null primary key autoincrement,
-			name text unique not null,
+			name text not null,
 			ownerID integer not null,
 			memberCount integer not null default 0,
 			password text default null,
@@ -69,6 +69,15 @@ func InitializeDatabase() {
 			FOREIGN KEY (ownerID) REFERENCES "User" (userID)
 		);
 
+		create table if not exists "GroupMembers" (
+			groupID integer not null primary key,
+			userID integer not null,
+			timestamp timestamp default CURRENT_TIMESTAMP,
+            
+			FOREIGN KEY (userID) REFERENCES "User" (userID),
+			FOREIGN KEY (groupID) REFERENCES "Group" (groupID)
+		);
+			
 		create table if not exists "Message" (
 			id integer not null primary key autoincrement,
 			userID integer not null,
@@ -80,15 +89,6 @@ func InitializeDatabase() {
 			FOREIGN KEY (groupID) REFERENCES "Group" (groupID)
 		);
 
-		create table if not exists "GroupUsers" (
-			groupID integer not null primary key,
-			userID integer not null,
-			timestamp integer not null,
-            
-			FOREIGN KEY (userID) REFERENCES "User" (userID),
-			FOREIGN KEY (groupID) REFERENCES "Group" (groupID)
-		);
-			
 		create table if not exists "GeoLocation" (
 			id integer not null primary key autoincrement,
 			userID integer not null,
