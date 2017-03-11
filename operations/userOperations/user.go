@@ -5,46 +5,49 @@ import (
 	"log"
 	"regexp"
 
+	"database/sql"
+
 	"../../db"
 	"../../model/userModel"
 	"../../utils"
 	"../../utils/regex"
 	"../../utils/tokens"
 	"../fb"
-	"database/sql"
 	"golang.org/x/crypto/bcrypt"
 )
 
-//CreateUser - store userName/password in hash
+//CreateUser -
 func CreateUser(email string, password string, firstName string, lastName string) error {
 
 	//validate password
 	if !regexp.MustCompile(regex.PASSWORD).MatchString(password) {
-		return errors.New("Invalid password.")
+		return errors.New("invalid password")
 	}
 
 	passwordHash, err := utils.GenerateHash(password)
 
 	if err != nil {
 		log.Println(err)
-		return errors.New("Error hashing password")
+		return errors.New("password hash error")
 	}
 
 	//validate email
 	if !regexp.MustCompile(regex.EMAIL).MatchString(email) {
-		return errors.New("Invalid email.")
+		return errors.New("invalid email")
 	}
 
+	nameLength := len(firstName + lastName)
+
 	// validate first/last name
-	if len(firstName+lastName) > 40 {
-		return errors.New("Name is too long")
+	if nameLength < 2 || nameLength > 40 {
+		return errors.New("invalid name")
 	}
 
 	// start sql transaction
 	tx, err := db.SQL.Begin()
 	if err != nil {
 		log.Println(err)
-		return errors.New("Database error.")
+		return errors.New("database error")
 	}
 
 	// commit the transaction when the function returns
@@ -55,21 +58,25 @@ func CreateUser(email string, password string, firstName string, lastName string
 	err = tx.QueryRow(`SELECT EXISTS(SELECT 1 FROM "User" WHERE "email" = ?);`, email).Scan(&userExists)
 
 	// return err or if email already exists
-	if err != nil || userExists {
-		return errors.New("That email is already in use.")
+	if err != nil {
+		log.Println(err)
+		return errors.New("database error")
+	} else if userExists {
+		return errors.New("email taken")
 	}
 
+	// insert into User email, passwordHash, firstName, and lastName
 	_, err = tx.Exec(`INSERT INTO "User" (email, password, firstName, lastName) VALUES (?, ?, ?, ?);`, email, passwordHash, firstName, lastName)
 
 	if err != nil {
 		log.Println(err)
-		return errors.New("Database error.")
+		return errors.New("database error")
 	}
 
 	return nil
 }
 
-//Login - check if password and userName are correct
+//Login - check if valid credentials - create JWT and return User object
 func Login(email string, password string) (*userModel.User, error) {
 
 	// new user struct
@@ -80,18 +87,18 @@ func Login(email string, password string) (*userModel.User, error) {
 
 	if err != nil {
 		log.Println(err)
-		return newUser, errors.New("User does not exist.")
+		return newUser, errors.New("invalid user")
 	}
 
 	if bcrypt.CompareHashAndPassword([]byte(newUser.Password), []byte(password)) != nil {
-		return &userModel.User{}, errors.New("Invalid password.")
+		return &userModel.User{}, errors.New("invalid password")
 	}
 
 	token, lastJwtRefresh, errToken := tokens.GetJWT(newUser.Email, newUser.ID, newUser.FirstName, newUser.LastName)
 
 	if errToken != nil {
 		log.Println(err)
-		return &userModel.User{}, errors.New("Token error.")
+		return &userModel.User{}, errors.New("jwt error")
 	}
 
 	newUser.Jwt = token
@@ -104,7 +111,7 @@ func LoginFacebook(accessToken string) (*userModel.User, error) {
 	// check if valid facebook user
 	fbResponse, err := fb.Me(accessToken)
 	if err != nil {
-		return &userModel.User{}, errors.New("Invalid FB token")
+		return &userModel.User{}, errors.New("facebook error")
 	}
 
 	// get the facebook user id
@@ -122,7 +129,7 @@ func LoginFacebook(accessToken string) (*userModel.User, error) {
 
 		if err != nil {
 			log.Println(err)
-			return &userModel.User{}, errors.New("Database error.")
+			return &userModel.User{}, errors.New("database error")
 		}
 
 		// get user information
@@ -130,19 +137,19 @@ func LoginFacebook(accessToken string) (*userModel.User, error) {
 
 		if err != nil {
 			log.Println(err)
-			return &userModel.User{}, errors.New("Database error.")
+			return &userModel.User{}, errors.New("database error")
 		}
 
 	} else if err != nil {
 		log.Println(err)
-		return &userModel.User{}, errors.New("Database error.")
+		return &userModel.User{}, errors.New("database error")
 	}
 
 	token, lastJwtRefresh, errToken := tokens.GetJWT(newUser.Email, newUser.ID, newUser.FirstName, newUser.LastName)
 
 	if errToken != nil {
 		log.Println(err)
-		return &userModel.User{}, errors.New("Token error.")
+		return &userModel.User{}, errors.New("jwt error")
 	}
 
 	newUser.Jwt = token
@@ -167,24 +174,29 @@ func createFacebookUser(fbResponse map[string]interface{}) error {
 	return nil
 }
 
+// SearchUserByName - return list of users that match name
 func SearchUserByName(name string) ([]*userModel.User, error) {
+
 	userList := []*userModel.User{}
+
 	// get user information
 	rows, err := db.SQL.Query(`SELECT id, email, firstName, lastName FROM "User" WHERE "firstName" || ' ' || "lastName" LIKE ?;`, "%"+name+"%")
 
 	if err != nil {
-		return []*userModel.User{}, err
+		log.Println(err)
+		return []*userModel.User{}, errors.New("database error")
 	}
 
 	defer rows.Close()
 
+	// map query to user object list
 	for rows.Next() {
 		newUser := &userModel.User{}
 		err := rows.Scan(&newUser.ID, &newUser.Email, &newUser.FirstName, &newUser.LastName)
 
 		if err != nil {
 			log.Println(err)
-			return []*userModel.User{}, errors.New("Database error.")
+			return []*userModel.User{}, errors.New("database error")
 		}
 		userList = append(userList, newUser)
 	}
@@ -193,16 +205,20 @@ func SearchUserByName(name string) ([]*userModel.User, error) {
 
 	if err != nil {
 		log.Println(err)
-		return []*userModel.User{}, errors.New("Row error.")
+		return []*userModel.User{}, errors.New("row error")
 	}
 
 	return userList, nil
 }
 
+// DeleteUser -
 func DeleteUser(userID string) error {
-	return nil
-}
 
-func GetInvites(userID string) (map[string]string, error) {
-	return db.Client.HGetAll(userModel.USER_GROUP_INVITES(userID)).Result()
+	// check if user exists
+
+	// delete from UserGroup table
+
+	// delete from User table
+
+	return nil
 }

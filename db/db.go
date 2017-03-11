@@ -80,6 +80,15 @@ func InitializeDatabase() {
 			FOREIGN KEY (groupID) REFERENCES "Group" (groupID)
 		);
 			
+		create table if not exists "GroupInvite" (
+			groupID integer not null,
+			userID integer not null,
+			timestamp timestamp default CURRENT_TIMESTAMP,
+            
+			FOREIGN KEY (userID) REFERENCES "User" (userID),
+			FOREIGN KEY (groupID) REFERENCES "Group" (groupID)
+		);
+
 		create table if not exists "Message" (
 			id integer not null primary key autoincrement,
 			userID integer not null,

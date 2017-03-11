@@ -5,30 +5,29 @@ import (
 	"log"
 	"regexp"
 
-	"../lua"
-
 	"../../db"
 	"../../model/groupModel"
 	"../../model/userModel"
 	"../../utils"
 	"../../utils/regex"
-	redis "gopkg.in/redis.v5"
 )
 
-//CreateGroup - store userName/password in hash
+//CreateGroup - create new group in Group table - also add owner to UserGroup table
 func CreateGroup(groupName string, userID string, password string, public bool) error {
 
 	// validate group name
 	if !regexp.MustCompile(regex.GROUP_NAME).MatchString(groupName) {
-		return errors.New("Invalid group name.")
+		return errors.New("invalid group name")
 	}
 
+	// start the SQL transaction
 	tx, err := db.SQL.Begin()
 	if err != nil {
 		log.Println(err)
-		return errors.New("Database error.")
+		return errors.New("database error")
 	}
 
+	// commit transaction when function returns
 	defer tx.Commit()
 
 	//check if the group already exists
@@ -37,18 +36,17 @@ func CreateGroup(groupName string, userID string, password string, public bool) 
 
 	if err != nil {
 		log.Println(err)
-		return errors.New("Database error.")
+		return errors.New("database error")
 	} else if groupExists {
-		return errors.New("Group already exists.")
+		return errors.New("group already exists")
 	}
 
 	if public {
-
 		// if users sets a password for the group
 		if password != "" {
 			// validate password
 			if len(password) < 5 {
-				return errors.New("Password must be more than 5 characters.")
+				return errors.New("password must be more than 5 characters")
 			}
 
 			// hash the password before storing in the database
@@ -63,22 +61,33 @@ func CreateGroup(groupName string, userID string, password string, public bool) 
 		} else {
 			_, err = tx.Exec(`INSERT INTO "Group" (name, ownerID, userCount, public) VALUES (?, ?, ?, ?);`, groupName, userID, 1, 1)
 		}
-	} else {
+	} else { // if private group
 		_, err = tx.Exec(`INSERT INTO "Group" (name, ownerID, userCount) VALUES (?, ?, ?);`, groupName, userID, 1)
 	}
 
 	if err != nil {
 		log.Println(err)
-		return errors.New("Database error.")
+		return errors.New("database error")
+	}
+
+	// insert id's into UserGroup table
+	_, err = tx.Exec(`INSERT INTO "UserGroup" (groupID, userID) VALUES ((SELECT id FROM "GROUP" WHERE name = ? AND ownerID = ?), ?);`, groupName, userID, userID)
+
+	if err != nil {
+		log.Println(err)
+		// roll back the transaction if we get an error inserting into UserGroup
+		tx.Rollback()
+		return errors.New("database error")
 	}
 
 	return nil
 }
 
+// SearchPublicGroups - matches group by group name
 func SearchPublicGroups(groupName string) ([]*groupModel.Group, error) {
 	groupList := []*groupModel.Group{}
 
-	// get user information
+	// query groups - join with UserGroup and User tables to get the group owner information
 	rows, err := db.SQL.Query(`
 		SELECT g.id, g.name, u.email, g.userCount, g.locked, u.firstName, u.lastName
 		FROM "Group" AS g INNER JOIN "USER" AS u ON g.ownerID = u.id
@@ -88,11 +97,12 @@ func SearchPublicGroups(groupName string) ([]*groupModel.Group, error) {
 
 	if err != nil {
 		log.Println(err)
-		return []*groupModel.Group{}, errors.New("Database error.")
+		return []*groupModel.Group{}, errors.New("database error")
 	}
 
 	defer rows.Close()
 
+	// map query to object list
 	for rows.Next() {
 		newGroup := &groupModel.Group{}
 		var firstName string
@@ -102,7 +112,7 @@ func SearchPublicGroups(groupName string) ([]*groupModel.Group, error) {
 
 		if err != nil {
 			log.Println(err)
-			return []*groupModel.Group{}, errors.New("Database error.")
+			return []*groupModel.Group{}, errors.New("database error")
 		}
 
 		groupList = append(groupList, newGroup)
@@ -112,39 +122,38 @@ func SearchPublicGroups(groupName string) ([]*groupModel.Group, error) {
 
 	if err != nil {
 		log.Println(err)
-		return []*groupModel.Group{}, errors.New("Row error.")
+		return []*groupModel.Group{}, errors.New("row error")
 	}
 
 	return groupList, nil
 }
 
-// get all the group for a specific user
+//GetUserGroups - get group list for a specific user
 func GetUserGroups(userID string) ([]*groupModel.Group, error) {
 	groupList := []*groupModel.Group{}
 
-	// get user information
+	// get group list - join Group on UserGroup and User
 	rows, err := db.SQL.Query(`
 		SELECT g.id, g.name, g.ownerID, g.userCount, g.locked FROM "Group" AS g
 		INNER JOIN "UserGroup" AS ug ON g.id = ug.groupID
 		INNER JOIN "User" AS u ON ug.userID = u.id
-		WHERE u.id = ?;
-		`,
-		"%"+userID+"%")
+		WHERE u.id = ?;`, userID)
 
 	if err != nil {
 		log.Println(err)
-		return []*groupModel.Group{}, errors.New("Database error.")
+		return []*groupModel.Group{}, errors.New("database error")
 	}
 
 	defer rows.Close()
 
+	// map query to group object list
 	for rows.Next() {
 		newGroup := &groupModel.Group{}
 		err := rows.Scan(&newGroup.ID, &newGroup.Name, &newGroup.OwnerID, &newGroup.UserCount, &newGroup.Locked)
 
 		if err != nil {
 			log.Println(err)
-			return []*groupModel.Group{}, errors.New("Database error.")
+			return []*groupModel.Group{}, errors.New("database error")
 		}
 
 		groupList = append(groupList, newGroup)
@@ -154,14 +163,79 @@ func GetUserGroups(userID string) ([]*groupModel.Group, error) {
 
 	if err != nil {
 		log.Println(err)
-		return []*groupModel.Group{}, errors.New("Row error.")
+		return []*groupModel.Group{}, errors.New("row error")
 	}
 
 	return groupList, nil
 }
 
-// TODO
+//GetGroupUsers - list users for single group
+func GetGroupUsers(userID string, groupID string) ([]*userModel.User, error) {
+
+	// start SQL transaction
+	tx, err := db.SQL.Begin()
+	if err != nil {
+		log.Println(err)
+		return []*userModel.User{}, errors.New("database error")
+	}
+
+	defer tx.Commit()
+
+	// check if user exists in group before getting group users
+	// check ID's in UserGroup table
+	var userExistsInGroup bool
+	err = tx.QueryRow(`SELECT EXISTS(SELECT 1 FROM "UserGroup" WHERE "groupID" = ? AND "userID" = ?);`, groupID, userID).Scan(&userExistsInGroup)
+
+	if err != nil {
+		log.Println(err)
+		return []*userModel.User{}, errors.New("database error")
+	} else if !userExistsInGroup {
+		return []*userModel.User{}, errors.New("user not in group")
+	}
+
+	// get list of users if user exists in group
+	userList := []*userModel.User{}
+
+	// get user information
+	rows, err := tx.Query(`
+		SELECT u.id, u.email, u.firstName, u.lastName FROM "User" AS u
+		INNER JOIN "UserGroup" AS ug ON u.id = ug.userID
+		INNER JOIN "Group" AS g ON ug.groupID = g.id
+		WHERE g.id = ?;`, groupID)
+
+	if err != nil {
+		log.Println(err)
+		return []*userModel.User{}, errors.New("database error")
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		newUser := &userModel.User{}
+		err := rows.Scan(&newUser.ID, &newUser.Email, &newUser.FirstName, &newUser.LastName)
+
+		if err != nil {
+			log.Println(err)
+			return []*userModel.User{}, errors.New("database error")
+		}
+
+		userList = append(userList, newUser)
+	}
+
+	err = rows.Err()
+
+	if err != nil {
+		log.Println(err)
+		return []*userModel.User{}, errors.New("row error")
+	}
+
+	return userList, nil
+}
+
+// JoinGroupWithPassword -
 func JoinGroupWithPassword(userID string, ownerID string, groupID int, password string) {
+
+	// check if group has
 	/*
 		tx, err := db.SQL.Begin()
 		if err != nil {
@@ -185,162 +259,48 @@ func JoinGroupWithPassword(userID string, ownerID string, groupID int, password 
 
 }
 
-//GetGroupMembers - returns string array of group members - userID/userName
-func GetGroupMembers(userID string, groupID string) (interface{}, error) {
+// InviteToGroup -
+func InviteToGroup(ownerID string, userID string, groupID string) error {
 
-	script := redis.NewScript(lua.Use("GetGroupMembers.lua"))
+	// check if ownerID = group.ownerID
 
-	return script.Run(db.Client, []string{
-		groupModel.GROUP_HASH(groupID),
-		groupModel.GROUP_MEMBERS(groupID),
-	},
-		userID,
-	).Result()
-}
+	// check if user exists
 
-func InviteToGroup(groupOwnerID string, groupID string, invUserID string) error {
-	pipe := db.Client.Pipeline()
-	defer pipe.Close()
+	// check if user already exists in group
 
-	//get group information
-	groupInfo := pipe.HGetAll(groupModel.GROUP_HASH(groupID))
-
-	//check if user exists
-	tempUserExists := pipe.Exists(userModel.USER_HASH(invUserID))
-
-	//check if user already exists in group
-	tempUserExistsInGroup := pipe.HExists(groupModel.GROUP_MEMBERS(groupID), invUserID)
-
-	//check if user already has an invite to the group that is pending
-	tempUserHasPendingInvite := pipe.HExists(userModel.USER_GROUP_INVITES(invUserID), groupID)
-
-	_, err := pipe.Exec()
-
-	storedGroupOwnerID := groupInfo.Val()["owner"]
-	storedGroupName := groupInfo.Val()["groupName"]
-
-	if err != nil {
-		return errors.New("Error inviting user.")
-	}
-
-	if groupOwnerID != storedGroupOwnerID {
-		return errors.New("User does not have permission.")
-	}
-
-	userExists := tempUserExists.Val()
-
-	if !userExists {
-		return errors.New("User does not exist.")
-	}
-
-	userHasPendingInvite := tempUserHasPendingInvite.Val()
-
-	if userHasPendingInvite {
-		return errors.New("User has pending invite.")
-	}
-
-	userExistsInGroup := tempUserExistsInGroup.Val()
-
-	if userExistsInGroup {
-		return errors.New("User is already in group.")
-	}
-
-	addInviteErr := db.Client.HSet(userModel.USER_GROUP_INVITES(invUserID), groupID, storedGroupName).Err()
-
-	if addInviteErr != nil {
-		return addInviteErr
-	}
+	// insert (if not exists in table already) into GroupInvite userID and groupID
 
 	return nil
 }
 
-func JoinGroup(userID string, groupID string) error {
+// JoinGroupFromInvite -
+func JoinGroupFromInvite(userID string, groupID string) error {
 
-	pipe := db.Client.Pipeline()
-	defer pipe.Close()
+	// check if user has invite to group
 
-	userInfo := pipe.HGetAll(userModel.USER_HASH(userID))
-	groupInfo := pipe.HGetAll(groupModel.GROUP_HASH(groupID))
-
-	groupExists := pipe.Exists(groupModel.GROUP_HASH(groupID))
-	userHasInvite := pipe.HExists(userModel.USER_GROUP_INVITES(userID), groupID)
-
-	_, err_pipe1 := pipe.Exec()
-
-	if err_pipe1 != nil {
-		return err_pipe1
-	}
-
-	if !groupExists.Val() {
-		//delete user invite if group has been deleted and they still have an invite
-		if userHasInvite.Val() {
-			db.Client.HDel(userModel.USER_GROUP_INVITES(userID), groupID)
-		}
-		return errors.New("Group does not exist.")
-	}
-
-	if !userHasInvite.Val() {
-		return errors.New("User does not have an invite.")
-	}
-
-	fullName := userInfo.Val()["fullName"]
-	groupName := groupInfo.Val()["groupName"]
-
-	pipe.HSet(groupModel.GROUP_MEMBERS(groupID), userID, fullName)
-	pipe.HSet(userModel.USER_GROUPS(userID), groupID, groupName)
-	pipe.HDel(userModel.USER_GROUP_INVITES(userID), groupID)
-
-	_, err_pipe2 := pipe.Exec()
-
-	if err_pipe2 != nil {
-		return err_pipe2
-	}
+	// insert into UserGroup userId and groupID
 
 	return nil
 }
 
+// LeaveGroup -
 func LeaveGroup(userID string, groupID string) error {
 
-	pipe := db.Client.Pipeline()
-	defer pipe.Close()
+	// check if user is group owner
 
-	userExistsInGroup := pipe.HExists(groupModel.GROUP_MEMBERS(groupID), userID)
-	groupExistsInUser := pipe.HExists(userModel.USER_GROUPS(userID), groupID)
+	// delete from UserGroup if user is not owner
 
-	_, err1 := pipe.Exec()
-
-	if err1 != nil {
-		return errors.New("Pipe error.")
-	}
-
-	if !userExistsInGroup.Val() && !groupExistsInUser.Val() {
-		return errors.New("You are not a member of this group.")
-	}
-
-	pipe.HDel(groupModel.GROUP_MEMBERS(groupID), userID)
-	pipe.HDel(userModel.USER_GROUPS(userID), groupID)
-
-	_, err2 := pipe.Exec()
-
-	return err2
+	return nil
 }
 
+// DeleteGroup -
 func DeleteGroup(userID string, groupID string) error {
 
-	script := redis.NewScript(lua.Use("DeleteGroup.lua"))
+	// check if user is owner
 
-	return script.Run(db.Client, []string{
-		userModel.USER_HASH(userID),
-		groupModel.GROUP_ID(),
-		groupModel.GROUP_HASH(groupID),
-		groupModel.GROUP_MEMBERS(groupID),
-		groupModel.GROUP_MESSAGES(groupID),
-		groupModel.GROUP_GEO(groupID),
-		groupModel.GROUP_LOCATIONS(groupID),
-	},
-		userID,
-		groupID,
-		userModel.USER_GROUPS_KEY(),
-		userModel.USER_GROUP_MESSAGES_KEY(),
-	).Err()
+	// delete from UserGroup where groupID = groupID
+
+	// delete from Group where id = groupID
+
+	return nil
 }
