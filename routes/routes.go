@@ -39,6 +39,7 @@ func RegisterRoutes(app *echo.Echo) {
 	app.POST("/group/leaveGroup", groupRoutes.LeaveGroup)
 	app.POST("/group/deleteGroup", groupRoutes.DeleteGroup)
 	app.POST("/group/storeMessage", groupRoutes.StoreMessage)
+	app.POST("/group/searchPublicGroups", groupRoutes.SearchPublicGroups)
 
 	//geo
 	app.POST("/group/storeGeoLocation", groupRoutes.StoreGeoLocation)

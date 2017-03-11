@@ -16,9 +16,7 @@ import (
 )
 
 //CreateGroup - store userName/password in hash
-func CreateGroup(groupName string, userID string, password string) error {
-
-	// TODO figure out how to handle blank password with new web framework
+func CreateGroup(groupName string, userID string, password string, public bool) error {
 
 	// validate group name
 	if !regexp.MustCompile(regex.GROUP_NAME).MatchString(groupName) {
@@ -44,18 +42,29 @@ func CreateGroup(groupName string, userID string, password string) error {
 		return errors.New("Group already exists.")
 	}
 
-	if password != "" {
-		// hash the password before storing in the database
-		passwordHash, err := utils.GenerateHash(password)
+	if public {
 
-		if err != nil {
-			log.Println(err)
-			return errors.New("Error hashing password")
+		// if users sets a password for the group
+		if password != "" {
+			// validate password
+			if len(password) < 5 {
+				return errors.New("Password must be more than 5 characters.")
+			}
+
+			// hash the password before storing in the database
+			passwordHash, err := utils.GenerateHash(password)
+
+			if err != nil {
+				log.Println(err)
+				return errors.New("Error hashing password")
+			}
+
+			_, err = tx.Exec(`INSERT INTO "Group" (name, ownerID, userCount, public, password, locked) VALUES (?, ?, ?, ?, ?, ?);`, groupName, userID, 1, 1, passwordHash, 1)
+		} else {
+			_, err = tx.Exec(`INSERT INTO "Group" (name, ownerID, userCount, public) VALUES (?, ?, ?, ?);`, groupName, userID, 1, 1)
 		}
-
-		_, err = tx.Exec(`INSERT INTO "Group" (name, ownerID, memberCount, password) VALUES (?, ?, ?, ?);`, groupName, userID, 1, passwordHash)
 	} else {
-		_, err = tx.Exec(`INSERT INTO "Group" (name, ownerID, memberCount) VALUES (?, ?, ?);`, groupName, userID, 1)
+		_, err = tx.Exec(`INSERT INTO "Group" (name, ownerID, userCount) VALUES (?, ?, ?);`, groupName, userID, 1)
 	}
 
 	if err != nil {
@@ -66,8 +75,93 @@ func CreateGroup(groupName string, userID string, password string) error {
 	return nil
 }
 
+func SearchPublicGroups(groupName string) ([]*groupModel.Group, error) {
+	groupList := []*groupModel.Group{}
+
+	// get user information
+	rows, err := db.SQL.Query(`
+		SELECT g.id, g.name, u.email, g.userCount, g.locked, u.firstName, u.lastName
+		FROM "Group" AS g INNER JOIN "USER" AS u ON g.ownerID = u.id
+		WHERE g.public = 1 AND g.name LIKE ?;
+		`,
+		"%"+groupName+"%")
+
+	if err != nil {
+		log.Println(err)
+		return []*groupModel.Group{}, errors.New("Database error.")
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		newGroup := &groupModel.Group{}
+		var firstName string
+		var lastName string
+		err := rows.Scan(&newGroup.ID, &newGroup.Name, &newGroup.OwnerEmail, &newGroup.UserCount, &newGroup.Locked, &firstName, &lastName)
+		newGroup.OwnerName = firstName + " " + lastName
+
+		if err != nil {
+			log.Println(err)
+			return []*groupModel.Group{}, errors.New("Database error.")
+		}
+
+		groupList = append(groupList, newGroup)
+	}
+
+	err = rows.Err()
+
+	if err != nil {
+		log.Println(err)
+		return []*groupModel.Group{}, errors.New("Row error.")
+	}
+
+	return groupList, nil
+}
+
+// get all the group for a specific user
+func GetUserGroups(userID string) ([]*groupModel.Group, error) {
+	groupList := []*groupModel.Group{}
+
+	// get user information
+	rows, err := db.SQL.Query(`
+		SELECT g.id, g.name, g.ownerID, g.userCount, g.locked FROM "Group" AS g
+		INNER JOIN "UserGroup" AS ug ON g.id = ug.groupID
+		INNER JOIN "User" AS u ON ug.userID = u.id
+		WHERE u.id = ?;
+		`,
+		"%"+userID+"%")
+
+	if err != nil {
+		log.Println(err)
+		return []*groupModel.Group{}, errors.New("Database error.")
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		newGroup := &groupModel.Group{}
+		err := rows.Scan(&newGroup.ID, &newGroup.Name, &newGroup.OwnerID, &newGroup.UserCount, &newGroup.Locked)
+
+		if err != nil {
+			log.Println(err)
+			return []*groupModel.Group{}, errors.New("Database error.")
+		}
+
+		groupList = append(groupList, newGroup)
+	}
+
+	err = rows.Err()
+
+	if err != nil {
+		log.Println(err)
+		return []*groupModel.Group{}, errors.New("Row error.")
+	}
+
+	return groupList, nil
+}
+
 // TODO
-func JoinGroupWithPassword(userID string, ownerID string, groupName string, password string) {
+func JoinGroupWithPassword(userID string, ownerID string, groupID int, password string) {
 	/*
 		tx, err := db.SQL.Begin()
 		if err != nil {

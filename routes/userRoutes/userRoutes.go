@@ -118,16 +118,9 @@ func SearchUserByName(ctx echo.Context) error {
 }
 
 func GetGroups(ctx echo.Context) error {
-	userID := ctx.Get("userID").(string)
+	_ = ctx.Get("userID").(string)
 
-	groups, err := userOperations.GetGroups(userID)
-
-	switch err {
-	case nil:
-		return ctx.JSON(200, groups)
-	default:
-		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
-	}
+	return ctx.JSON(200, "TODO")
 }
 
 func GetInvites(ctx echo.Context) error {

@@ -63,14 +63,16 @@ func InitializeDatabase() {
 			id integer not null primary key autoincrement,
 			name text not null,
 			ownerID integer not null,
-			memberCount integer not null default 0,
+			userCount integer not null,
 			password text default null,
+			locked integer not null default 0,
+			public integer not null default 0,
             
 			FOREIGN KEY (ownerID) REFERENCES "User" (userID)
 		);
 
-		create table if not exists "GroupMembers" (
-			groupID integer not null primary key,
+		create table if not exists "UserGroup" (
+			groupID integer not null,
 			userID integer not null,
 			timestamp timestamp default CURRENT_TIMESTAMP,
             

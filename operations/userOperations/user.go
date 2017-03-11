@@ -170,11 +170,10 @@ func createFacebookUser(fbResponse map[string]interface{}) error {
 func SearchUserByName(name string) ([]*userModel.User, error) {
 	userList := []*userModel.User{}
 	// get user information
-	log.Println(name)
 	rows, err := db.SQL.Query(`SELECT id, email, firstName, lastName FROM "User" WHERE "firstName" || ' ' || "lastName" LIKE ?;`, "%"+name+"%")
 
 	if err != nil {
-		return userList, err
+		return []*userModel.User{}, err
 	}
 
 	defer rows.Close()
@@ -202,11 +201,6 @@ func SearchUserByName(name string) ([]*userModel.User, error) {
 
 func DeleteUser(userID string) error {
 	return nil
-}
-
-//GetUserGroups - get all the groups the user exists in
-func GetGroups(userID string) (map[string]string, error) {
-	return map[string]string{"test": "123"}, nil
 }
 
 func GetInvites(userID string) (map[string]string, error) {

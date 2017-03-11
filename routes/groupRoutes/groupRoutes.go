@@ -11,12 +11,26 @@ func CreateGroup(ctx echo.Context) error {
 	userID := ctx.Get("userID").(string)
 	groupName := ctx.FormValue("groupName")
 	password := ctx.FormValue("password")
+	public := ctx.FormValue("public") != ""
 
-	err := groupOperations.CreateGroup(groupName, userID, password)
+	err := groupOperations.CreateGroup(groupName, userID, password, public)
 
 	switch err {
 	case nil:
 		return ctx.JSON(200, response.Json("Group created.", response.SUCCESS))
+	default:
+		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
+	}
+}
+
+func SearchPublicGroups(ctx echo.Context) error {
+	groupName := ctx.FormValue("groupName")
+
+	groups, err := groupOperations.SearchPublicGroups(groupName)
+
+	switch err {
+	case nil:
+		return ctx.JSON(200, groups)
 	default:
 		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
 	}

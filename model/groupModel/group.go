@@ -12,12 +12,15 @@ const (
 )
 
 type Group struct {
-	ID          string `json:"id"`
-	name        string `json:"name"`
-	ownerID     string `json:"ownerID"`
-	MemberCount int    `json:"memberCount,omitempty"`
-	Password    string `json:"-"`
-	InviteOnly  bool   `json:"inviteOnly,omitempty"`
+	ID         string `json:"id,omitempty"`
+	Name       string `json:"name,omitempty"`
+	OwnerID    string `json:"ownerID,omitempty"`
+	OwnerEmail string `json:"ownerEmail,omitempty"`
+	OwnerName  string `json:"ownerName,omitempty"`
+	UserCount  int    `json:"userCount,omitempty"`
+	Password   string `json:"-"`
+	Locked     bool   `json:"locked"` // if the group is password protected
+	Public     bool   `json:"public,omitempty"`
 }
 
 func GROUP_KEY_STORE() string {
