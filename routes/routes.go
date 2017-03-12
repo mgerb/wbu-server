@@ -31,4 +31,5 @@ func RegisterRoutes(app *echo.Echo) {
 	//groups
 	app.POST("/group/createGroup", groupRoutes.CreateGroup)
 	app.POST("/group/searchPublicGroups", groupRoutes.SearchPublicGroups)
+	app.POST("/group/joinPublicGroup", groupRoutes.JoinPublicGroup)
 }

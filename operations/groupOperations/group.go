@@ -5,6 +5,8 @@ import (
 	"log"
 	"regexp"
 
+	"golang.org/x/crypto/bcrypt"
+
 	"../../db"
 	"../../model/groupModel"
 	"../../model/userModel"
@@ -57,7 +59,7 @@ func CreateGroup(groupName string, userID string, password string, public bool) 
 				return errors.New("Error hashing password")
 			}
 
-			_, err = tx.Exec(`INSERT INTO "Group" (name, ownerID, userCount, public, password, locked) VALUES (?, ?, ?, ?, ?, ?);`, groupName, userID, 1, 1, passwordHash, 1)
+			_, err = tx.Exec(`INSERT INTO "Group" (name, ownerID, userCount, public, password) VALUES (?, ?, ?, ?, ?);`, groupName, userID, 1, 1, passwordHash)
 		} else {
 			_, err = tx.Exec(`INSERT INTO "Group" (name, ownerID, userCount, public) VALUES (?, ?, ?, ?);`, groupName, userID, 1, 1)
 		}
@@ -89,10 +91,9 @@ func SearchPublicGroups(groupName string) ([]*groupModel.Group, error) {
 
 	// query groups - join with UserGroup and User tables to get the group owner information
 	rows, err := db.SQL.Query(`
-		SELECT g.id, g.name, u.email, g.userCount, g.locked, u.firstName, u.lastName
+		SELECT g.id, g.name, u.email, g.userCount, g.password, u.firstName, u.lastName
 		FROM "Group" AS g INNER JOIN "USER" AS u ON g.ownerID = u.id
-		WHERE g.public = 1 AND g.name LIKE ?;
-		`,
+		WHERE g.public = 1 AND g.name LIKE ?;`,
 		"%"+groupName+"%")
 
 	if err != nil {
@@ -107,8 +108,11 @@ func SearchPublicGroups(groupName string) ([]*groupModel.Group, error) {
 		newGroup := &groupModel.Group{}
 		var firstName string
 		var lastName string
-		err := rows.Scan(&newGroup.ID, &newGroup.Name, &newGroup.OwnerEmail, &newGroup.UserCount, &newGroup.Locked, &firstName, &lastName)
+		err := rows.Scan(&newGroup.ID, &newGroup.Name, &newGroup.OwnerEmail, &newGroup.UserCount, &newGroup.Password, &firstName, &lastName)
 		newGroup.OwnerName = firstName + " " + lastName
+
+		// group is locked if password is not null
+		newGroup.Locked = newGroup.Password.Valid
 
 		if err != nil {
 			log.Println(err)
@@ -134,7 +138,7 @@ func GetUserGroups(userID string) ([]*groupModel.Group, error) {
 
 	// get group list - join Group on UserGroup and User
 	rows, err := db.SQL.Query(`
-		SELECT g.id, g.name, g.ownerID, g.userCount, g.locked FROM "Group" AS g
+		SELECT g.id, g.name, g.ownerID, g.userCount, g.password , g.public FROM "Group" AS g
 		INNER JOIN "UserGroup" AS ug ON g.id = ug.groupID
 		INNER JOIN "User" AS u ON ug.userID = u.id
 		WHERE u.id = ?;`, userID)
@@ -149,7 +153,10 @@ func GetUserGroups(userID string) ([]*groupModel.Group, error) {
 	// map query to group object list
 	for rows.Next() {
 		newGroup := &groupModel.Group{}
-		err := rows.Scan(&newGroup.ID, &newGroup.Name, &newGroup.OwnerID, &newGroup.UserCount, &newGroup.Locked)
+		err := rows.Scan(&newGroup.ID, &newGroup.Name, &newGroup.OwnerID, &newGroup.UserCount, &newGroup.Password, &newGroup.Public)
+
+		// group is locked if password is not null
+		newGroup.Locked = newGroup.Password.Valid
 
 		if err != nil {
 			log.Println(err)
@@ -232,31 +239,65 @@ func GetGroupUsers(userID string, groupID string) ([]*userModel.User, error) {
 	return userList, nil
 }
 
-// JoinGroupWithPassword -
-func JoinGroupWithPassword(userID string, ownerID string, groupID int, password string) {
+// JoinPublicGroup -
+func JoinPublicGroup(userID string, groupID string, password string) error {
 
-	// check if group has
-	/*
-		tx, err := db.SQL.Begin()
-		if err != nil {
-			log.Println(err)
-			return errors.New("Database error.")
-		}
+	tx, err := db.SQL.Begin()
+	if err != nil {
+		log.Println(err)
+		return errors.New("database error")
+	}
 
-		defer tx.Commit()
+	defer tx.Commit()
 
-		//check if the group already exists
-		var groupExists bool
-		err = tx.QueryRow(`SELECT EXISTS(SELECT 1 FROM "Group" WHERE "name" = ? AND "ownerID" = ?);`, groupName, userID).Scan(&groupExists)
+	newGroup := &groupModel.Group{}
 
-		if err != nil {
-			log.Println(err)
-			return errors.New("Database error.")
-		} else if groupExists {
-			return errors.New("Group already exists.")
-		}
-	*/
+	err = tx.QueryRow(`SELECT password, public FROM "Group" WHERE id = ?;`, groupID).Scan(&newGroup.Password, &newGroup.Public)
 
+	if err != nil {
+		// will error if group does not exist
+		log.Println(err)
+		return errors.New("database error")
+	}
+
+	if !newGroup.Public {
+		return errors.New("group not public")
+	}
+
+	// if group has a password - check if passwords match
+	if newGroup.Password.Valid && bcrypt.CompareHashAndPassword([]byte(newGroup.Password.String), []byte(password)) != nil {
+		return errors.New("invalid password")
+	}
+
+	var userExistsInGroup bool
+	err = tx.QueryRow(`SELECT EXISTS(SELECT 1 FROM "UserGroup" WHERE "groupID" = ? AND "userID" = ?);`, groupID, userID).Scan(&userExistsInGroup)
+
+	if err != nil {
+		log.Println(err)
+		return errors.New("database error")
+	} else if userExistsInGroup {
+		return errors.New("user already in group")
+	}
+
+	// insert id's into UserGroup table
+	_, err = tx.Exec(`INSERT INTO "UserGroup" (userID, groupID) SELECT ?, ?
+					WHERE NOT EXISTS(SELECT 1 FROM "UserGroup" WHERE userID = ? AND groupID = ?);`, userID, groupID, userID, groupID)
+
+	if err != nil {
+		log.Println(err)
+		return errors.New("database error")
+	}
+
+	// update userCount in Group table
+	_, err = tx.Exec(`UPDATE "Group" SET userCount = userCount + 1 WHERE id = ?;`, groupID)
+
+	if err != nil {
+		tx.Rollback()
+		log.Println(err)
+		return errors.New("database error")
+	}
+
+	return nil
 }
 
 // InviteToGroup -

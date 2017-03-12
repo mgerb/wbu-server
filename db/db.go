@@ -65,7 +65,6 @@ func InitializeDatabase() {
 			ownerID integer not null,
 			userCount integer not null,
 			password text default null,
-			locked integer not null default 0,
 			public integer not null default 0,
             
 			FOREIGN KEY (ownerID) REFERENCES "User" (userID)

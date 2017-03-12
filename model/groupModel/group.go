@@ -1,5 +1,7 @@
 package groupModel
 
+import "database/sql"
+
 const (
 	grKeys = "grKeys" //increments on each new group
 
@@ -12,15 +14,15 @@ const (
 )
 
 type Group struct {
-	ID         string `json:"id,omitempty"`
-	Name       string `json:"name,omitempty"`
-	OwnerID    string `json:"ownerID,omitempty"`
-	OwnerEmail string `json:"ownerEmail,omitempty"`
-	OwnerName  string `json:"ownerName,omitempty"`
-	UserCount  int    `json:"userCount,omitempty"`
-	Password   string `json:"-"`
-	Locked     bool   `json:"locked"` // if the group is password protected
-	Public     bool   `json:"public,omitempty"`
+	ID         string         `json:"id,omitempty"`
+	Name       string         `json:"name,omitempty"`
+	OwnerID    string         `json:"ownerID,omitempty"`
+	OwnerEmail string         `json:"ownerEmail,omitempty"`
+	OwnerName  string         `json:"ownerName,omitempty"`
+	UserCount  int            `json:"userCount,omitempty"`
+	Password   sql.NullString `json:"-"`
+	Locked     bool           `json:"locked"` // if the group is password protected
+	Public     bool           `json:"public,omitempty"`
 }
 
 func GROUP_KEY_STORE() string {
