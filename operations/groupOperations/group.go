@@ -5,13 +5,11 @@ import (
 	"log"
 	"regexp"
 
-	"golang.org/x/crypto/bcrypt"
-
 	"../../db"
-	"../../model/groupModel"
-	"../../model/userModel"
+	"../../model"
 	"../../utils"
 	"../../utils/regex"
+	"golang.org/x/crypto/bcrypt"
 )
 
 //CreateGroup - create new group in Group table - also add owner to UserGroup table
@@ -86,8 +84,8 @@ func CreateGroup(groupName string, userID string, password string, public bool) 
 }
 
 // SearchPublicGroups - matches group by group name
-func SearchPublicGroups(groupName string) ([]*groupModel.Group, error) {
-	groupList := []*groupModel.Group{}
+func SearchPublicGroups(groupName string) ([]*model.Group, error) {
+	groupList := []*model.Group{}
 
 	// query groups - join with UserGroup and User tables to get the group owner information
 	rows, err := db.SQL.Query(`
@@ -98,14 +96,14 @@ func SearchPublicGroups(groupName string) ([]*groupModel.Group, error) {
 
 	if err != nil {
 		log.Println(err)
-		return []*groupModel.Group{}, errors.New("database error")
+		return []*model.Group{}, errors.New("database error")
 	}
 
 	defer rows.Close()
 
 	// map query to object list
 	for rows.Next() {
-		newGroup := &groupModel.Group{}
+		newGroup := &model.Group{}
 		var firstName string
 		var lastName string
 		err := rows.Scan(&newGroup.ID, &newGroup.Name, &newGroup.OwnerEmail, &newGroup.UserCount, &newGroup.Password, &firstName, &lastName)
@@ -116,7 +114,7 @@ func SearchPublicGroups(groupName string) ([]*groupModel.Group, error) {
 
 		if err != nil {
 			log.Println(err)
-			return []*groupModel.Group{}, errors.New("database error")
+			return []*model.Group{}, errors.New("database error")
 		}
 
 		groupList = append(groupList, newGroup)
@@ -126,15 +124,15 @@ func SearchPublicGroups(groupName string) ([]*groupModel.Group, error) {
 
 	if err != nil {
 		log.Println(err)
-		return []*groupModel.Group{}, errors.New("row error")
+		return []*model.Group{}, errors.New("row error")
 	}
 
 	return groupList, nil
 }
 
 //GetUserGroups - get group list for a specific user
-func GetUserGroups(userID string) ([]*groupModel.Group, error) {
-	groupList := []*groupModel.Group{}
+func GetUserGroups(userID string) ([]*model.Group, error) {
+	groupList := []*model.Group{}
 
 	// get group list - join Group on UserGroup and User
 	rows, err := db.SQL.Query(`
@@ -145,14 +143,14 @@ func GetUserGroups(userID string) ([]*groupModel.Group, error) {
 
 	if err != nil {
 		log.Println(err)
-		return []*groupModel.Group{}, errors.New("database error")
+		return []*model.Group{}, errors.New("database error")
 	}
 
 	defer rows.Close()
 
 	// map query to group object list
 	for rows.Next() {
-		newGroup := &groupModel.Group{}
+		newGroup := &model.Group{}
 		err := rows.Scan(&newGroup.ID, &newGroup.Name, &newGroup.OwnerID, &newGroup.UserCount, &newGroup.Password, &newGroup.Public)
 
 		// group is locked if password is not null
@@ -160,7 +158,7 @@ func GetUserGroups(userID string) ([]*groupModel.Group, error) {
 
 		if err != nil {
 			log.Println(err)
-			return []*groupModel.Group{}, errors.New("database error")
+			return []*model.Group{}, errors.New("database error")
 		}
 
 		groupList = append(groupList, newGroup)
@@ -170,20 +168,20 @@ func GetUserGroups(userID string) ([]*groupModel.Group, error) {
 
 	if err != nil {
 		log.Println(err)
-		return []*groupModel.Group{}, errors.New("row error")
+		return []*model.Group{}, errors.New("row error")
 	}
 
 	return groupList, nil
 }
 
 //GetGroupUsers - list users for single group
-func GetGroupUsers(userID string, groupID string) ([]*userModel.User, error) {
+func GetGroupUsers(userID string, groupID string) ([]*model.User, error) {
 
 	// start SQL transaction
 	tx, err := db.SQL.Begin()
 	if err != nil {
 		log.Println(err)
-		return []*userModel.User{}, errors.New("database error")
+		return []*model.User{}, errors.New("database error")
 	}
 
 	defer tx.Commit()
@@ -195,13 +193,13 @@ func GetGroupUsers(userID string, groupID string) ([]*userModel.User, error) {
 
 	if err != nil {
 		log.Println(err)
-		return []*userModel.User{}, errors.New("database error")
+		return []*model.User{}, errors.New("database error")
 	} else if !userExistsInGroup {
-		return []*userModel.User{}, errors.New("user not in group")
+		return []*model.User{}, errors.New("user not in group")
 	}
 
 	// get list of users if user exists in group
-	userList := []*userModel.User{}
+	userList := []*model.User{}
 
 	// get user information
 	rows, err := tx.Query(`
@@ -212,18 +210,18 @@ func GetGroupUsers(userID string, groupID string) ([]*userModel.User, error) {
 
 	if err != nil {
 		log.Println(err)
-		return []*userModel.User{}, errors.New("database error")
+		return []*model.User{}, errors.New("database error")
 	}
 
 	defer rows.Close()
 
 	for rows.Next() {
-		newUser := &userModel.User{}
+		newUser := &model.User{}
 		err := rows.Scan(&newUser.ID, &newUser.Email, &newUser.FirstName, &newUser.LastName)
 
 		if err != nil {
 			log.Println(err)
-			return []*userModel.User{}, errors.New("database error")
+			return []*model.User{}, errors.New("database error")
 		}
 
 		userList = append(userList, newUser)
@@ -233,7 +231,7 @@ func GetGroupUsers(userID string, groupID string) ([]*userModel.User, error) {
 
 	if err != nil {
 		log.Println(err)
-		return []*userModel.User{}, errors.New("row error")
+		return []*model.User{}, errors.New("row error")
 	}
 
 	return userList, nil
@@ -250,7 +248,7 @@ func JoinPublicGroup(userID string, groupID string, password string) error {
 
 	defer tx.Commit()
 
-	newGroup := &groupModel.Group{}
+	newGroup := &model.Group{}
 
 	err = tx.QueryRow(`SELECT password, public FROM "Group" WHERE id = ?;`, groupID).Scan(&newGroup.Password, &newGroup.Public)
 

@@ -56,7 +56,8 @@ func InitializeDatabase() {
 			password text default null,
 			firstName text not null,
 			lastName text not null,
-			facebookID text unique default null
+			facebookID text unique default null,
+			fcmToken text default null
 		);
                
 		create table if not exists "Group" (
@@ -73,7 +74,7 @@ func InitializeDatabase() {
 		create table if not exists "UserGroup" (
 			groupID integer not null,
 			userID integer not null,
-			timestamp timestamp default CURRENT_TIMESTAMP,
+			timestamp timestamp not null default CURRENT_TIMESTAMP,
             
 			FOREIGN KEY (userID) REFERENCES "User" (userID),
 			FOREIGN KEY (groupID) REFERENCES "Group" (groupID)
@@ -90,12 +91,11 @@ func InitializeDatabase() {
 
 		create table if not exists "Message" (
 			id integer not null primary key autoincrement,
-			userID integer not null,
 			groupID integer not null,
+			userID integer not null,
 			content text not null,
-			timestamp integer not null,
+			timestamp timestamp not null default CURRENT_TIMESTAMP,
             
-			FOREIGN KEY (userID) REFERENCES "User" (userID),
 			FOREIGN KEY (groupID) REFERENCES "Group" (groupID)
 		);
 
@@ -109,13 +109,6 @@ func InitializeDatabase() {
 			
 			FOREIGN KEY (userID) REFERENCES "User" (userID),
 			FOREIGN KEY (groupID) REFERENCES "Group" (groupID)
-		);
-
-		create table if not exists "Tokens" (
-			userID integer not null primary key,
-			fcmToken string,
-			
-			FOREIGN KEY (userID) REFERENCES "User" (userID)
 		);
 	`
 
