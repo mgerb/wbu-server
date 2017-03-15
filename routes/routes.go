@@ -8,7 +8,7 @@ import (
 	"github.com/labstack/echo"
 )
 
-//register routes
+//RegisterRoutes -
 func RegisterRoutes(app *echo.Echo) {
 
 	middleware.ApplyMiddleware(app)
@@ -32,4 +32,8 @@ func RegisterRoutes(app *echo.Echo) {
 	app.POST("/group/createGroup", groupRoutes.CreateGroup)
 	app.POST("/group/searchPublicGroups", groupRoutes.SearchPublicGroups)
 	app.POST("/group/joinPublicGroup", groupRoutes.JoinPublicGroup)
+
+	// messages
+	app.GET("/group/getMessages/:groupID/:timestamp", groupRoutes.GetMessages)
+	app.POST("/group/storeMessage", groupRoutes.StoreMessage)
 }

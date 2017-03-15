@@ -102,12 +102,13 @@ func StoreMessage(ctx echo.Context) error {
 func GetMessages(ctx echo.Context) error {
 	userID := ctx.Get("userID").(string)
 	groupID := ctx.Param("groupID")
+	timestamp := ctx.Param("timestamp")
 
-	messages, err := groupOperations.GetUserGroupMessages(groupID, userID)
+	messages, err := groupOperations.GetUserGroupMessages(groupID, userID, timestamp)
 
 	switch err {
 	case nil:
-		return ctx.JSON(200, map[string]interface{}{"messages": messages})
+		return ctx.JSON(200, messages)
 	default:
 		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
 	}

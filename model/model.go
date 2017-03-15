@@ -36,5 +36,5 @@ type Message struct {
 	FirstName string `json:"firstName,omitempty"`
 	LastName  string `json:"lastName,omitempty"`
 	Content   string `json:"Content,omitempty"`
-	Timestamp string `json:"timestamp"`
+	Timestamp string `json:"timestamp,omitempty"`
 }

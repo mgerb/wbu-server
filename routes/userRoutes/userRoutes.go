@@ -1,7 +1,6 @@
 package userRoutes
 
 import (
-	"../../operations/groupOperations"
 	"../../operations/userOperations"
 	"../../utils/response"
 	"../../utils/tokens"
@@ -22,24 +21,25 @@ func HandleTest(ctx echo.Context) error {
 	*/
 
 	/*
-		err := groupOperations.StoreUserGroupMessages("1", "fbID:10207835974837361", "te;lsakjfpo84owjofijsakjfhdasouhrfouashfst123")
+			err := groupOperations.StoreUserGroupMessages("1", "fbID:10207835974837361", "te;lsakjfpo84owjofijsakjfhdasouhrfouashfst123")
+
+			switch err {
+			case nil:
+				return ctx.JSON(200, response.Json("Message Stored.", response.SUCCESS))
+			default:
+				return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
+			}
+
+		messages, err := groupOperations.GetUserGroupMessages("1", "fbID:10207835974837361")
 
 		switch err {
 		case nil:
-			return ctx.JSON(200, response.Json("Message Stored.", response.SUCCESS))
+			return ctx.JSON(200, messages)
 		default:
 			return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
 		}
-
 	*/
-	messages, err := groupOperations.GetUserGroupMessages("1", "fbID:10207835974837361")
-
-	switch err {
-	case nil:
-		return ctx.JSON(200, messages)
-	default:
-		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
-	}
+	return nil
 }
 
 //CreateUser - create user account - currently takes in userName and password

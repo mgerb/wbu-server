@@ -51,7 +51,7 @@ func StoreUserGroupMessages(groupID string, userID string, message string) error
 
 // TODO - TEST
 //GetUserGroupMessages - return user messages for a group
-func GetUserGroupMessages(groupID string, userID string, timestamp string) ([]*model.Message, error) {
+func GetUserGroupMessages(groupID string, userID string, unixTime string) ([]*model.Message, error) {
 
 	// start SQL transaction
 	tx, err := db.SQL.Begin()
@@ -74,10 +74,10 @@ func GetUserGroupMessages(groupID string, userID string, timestamp string) ([]*m
 		return []*model.Message{}, errors.New("user not in group")
 	}
 
-	rows, err := tx.Query(`SELECT m.id, m.content, u.firstName, u.lastName FROM "Message" AS m INNER JOIN
-                        "UserGroup" AS ug ON m.groupID = ug.groupID INNER JOIN
-						"User" AS u ON u.id = ug.userID
-						WHERE groupID = ? AND timestamp > ?;`, groupID, timestamp)
+	// need to convert time input to local time because sqlite compares time strings and not unix time
+	rows, err := tx.Query(`SELECT m.id, m.content, u.firstName, u.lastName, strftime('%s', m.timestamp) FROM "Message" AS m INNER JOIN
+	   						"User" AS u ON u.id = m.userID
+	   						WHERE m.groupID = ? AND datetime(m.timestamp, 'localtime') >= datetime(?, 'unixepoch', 'localtime');`, groupID, unixTime) //timestamp.Format("2006-01-02 15:04:05"))
 
 	if err != nil {
 		log.Println(err)
@@ -90,7 +90,7 @@ func GetUserGroupMessages(groupID string, userID string, timestamp string) ([]*m
 
 	for rows.Next() {
 		newMessage := &model.Message{}
-		err := rows.Scan(&newMessage.ID, &newMessage.Content, &newMessage.FirstName, &newMessage.LastName)
+		err := rows.Scan(&newMessage.ID, &newMessage.Content, &newMessage.FirstName, &newMessage.LastName, &newMessage.Timestamp)
 
 		if err != nil {
 			log.Println(err)
@@ -107,7 +107,7 @@ func GetUserGroupMessages(groupID string, userID string, timestamp string) ([]*m
 		return []*model.Message{}, errors.New("row error")
 	}
 
-	return []*model.Message{}, nil
+	return messageList, nil
 }
 
 // fcmNotifications - get all fcm tokens and
