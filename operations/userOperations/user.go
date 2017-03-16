@@ -225,7 +225,18 @@ func DeleteUser(userID string) error {
 }
 
 // UpdateFCMToken - Update fcm token in user table
-func UpdateFCMToken(token string) error {
+func UpdateFCMToken(userID string, token string) error {
+
+	if token == "" {
+		return errors.New("invalid token")
+	}
+
+	_, err := db.SQL.Exec(`UPDATE "User" SET fcmToken = ? WHERE id = ?;`, token, userID)
+
+	if err != nil {
+		log.Println(err)
+		return errors.New("database error")
+	}
 
 	return nil
 }

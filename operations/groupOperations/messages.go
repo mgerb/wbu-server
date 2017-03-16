@@ -8,7 +8,6 @@ import (
 	"../../model"
 )
 
-// TODO - test
 //StoreUserGroupMessages - store a users messages in a group
 func StoreUserGroupMessages(groupID string, userID string, message string) error {
 
@@ -46,10 +45,12 @@ func StoreUserGroupMessages(groupID string, userID string, message string) error
 		return errors.New("database error")
 	}
 
+	// send out notifications via FCM
+	fcmNotifications(groupID)
+
 	return nil
 }
 
-// TODO - TEST
 //GetUserGroupMessages - return user messages for a group
 func GetUserGroupMessages(groupID string, userID string, unixTime string) ([]*model.Message, error) {
 
@@ -104,13 +105,44 @@ func GetUserGroupMessages(groupID string, userID string, unixTime string) ([]*mo
 
 	if err != nil {
 		log.Println(err)
-		return []*model.Message{}, errors.New("row error")
+		return []*model.Message{}, errors.New("database error")
 	}
 
 	return messageList, nil
 }
 
-// fcmNotifications - get all fcm tokens and
+// fcmNotifications - get all fcm tokens and send notifications to FCM
 func fcmNotifications(groupID string) {
 
+	rows, err := db.SQL.Query(`SELECT u.fcmToken from "UserGroup" AS ug INNER JOIN
+								"User" AS u ON ug.userID = u.id WHERE ug.groupID = ?;`, groupID)
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	defer rows.Close()
+
+	tokenList := []string{}
+
+	for rows.Next() {
+		var token string
+		err := rows.Scan(&token)
+
+		if err != nil {
+			log.Println(err)
+		}
+
+		tokenList = append(tokenList, token)
+	}
+
+	err = rows.Err()
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	// TODO - add FCM functionality
+	log.Println("FCM Token List")
+	log.Println(tokenList)
 }

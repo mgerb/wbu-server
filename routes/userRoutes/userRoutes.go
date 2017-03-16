@@ -135,3 +135,19 @@ func RefreshJWT(ctx echo.Context) error {
 		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
 	}
 }
+
+// UpdateFCMToken -
+func UpdateFCMToken(ctx echo.Context) error {
+	userID := ctx.Get("userID").(string)
+	token := ctx.FormValue("token")
+
+	err := userOperations.UpdateFCMToken(userID, token)
+
+	switch err {
+	case nil:
+		return ctx.JSON(200, response.Json("token updated", response.SUCCESS))
+
+	default:
+		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
+	}
+}

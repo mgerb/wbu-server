@@ -113,3 +113,33 @@ func GetMessages(ctx echo.Context) error {
 		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
 	}
 }
+
+// InviteUserToGroup - invite new user to a group
+func InviteUserToGroup(ctx echo.Context) error {
+	userID := ctx.Get("userID").(string)
+	inviteUserID := ctx.FormValue("inviteUserID")
+	groupID := ctx.FormValue("groupID")
+
+	err := groupOperations.InviteUserToGroup(userID, inviteUserID, groupID)
+
+	switch err {
+	case nil:
+		return ctx.JSON(200, response.Json("user invited", response.SUCCESS))
+	default:
+		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
+	}
+}
+
+// GetGroupInvites -
+func GetGroupInvites(ctx echo.Context) error {
+	userID := ctx.Get("userID").(string)
+
+	groupInvites, err := groupOperations.GetGroupInvites(userID)
+
+	switch err {
+	case nil:
+		return ctx.JSON(200, groupInvites)
+	default:
+		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
+	}
+}

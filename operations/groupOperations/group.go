@@ -298,18 +298,79 @@ func JoinPublicGroup(userID string, groupID string, password string) error {
 	return nil
 }
 
-// InviteToGroup -
-func InviteToGroup(ownerID string, userID string, groupID string) error {
+// InviteUserToGroup -
+func InviteUserToGroup(ownerID string, userID string, groupID string) error {
+
+	tx, err := db.SQL.Begin()
+	if err != nil {
+		log.Println(err)
+		return errors.New("database error")
+	}
+
+	defer tx.Commit()
 
 	// check if ownerID = group.ownerID
-
 	// check if user exists
-
 	// check if user already exists in group
+	var validTransaction bool
+	err = tx.QueryRow(`SELECT EXISTS(SELECT 1 FROM "Group" WHERE "ownerID" = ? AND "id" = ?)
+						AND EXISTS(SELECT 1 FROM "User" WHERE "id" = ?)
+						AND NOT EXISTS(SELECT 1 FROM "UserGroup" WHERE "userID" = ? AND "groupID" = ?);`, ownerID, groupID, userID, userID, groupID).Scan(&validTransaction)
+
+	if !validTransaction {
+		return errors.New("invalid invite")
+	} else if err != nil {
+		log.Println(err)
+		return errors.New("database error")
+	}
 
 	// insert (if not exists in table already) into GroupInvite userID and groupID
+	_, err = tx.Exec(`INSERT INTO "GroupInvite" (userID, groupID) SELECT ?, ?
+						WHERE NOT EXISTS(SELECT 1 FROM "GroupInvite" WHERE "userID" = ? AND "groupID" = ?);`, userID, groupID, userID, groupID)
+
+	if err != nil {
+		log.Println(err)
+		return errors.New("database error")
+	}
+
+	// FCM Notifications
 
 	return nil
+}
+
+// GetGroupInvites -
+func GetGroupInvites(userID string) ([]*model.Group, error) {
+
+	rows, err := db.SQL.Query(`SELECT g.ID, g.name, g.userCount, u.firstName, u.lastName, u.email
+								FROM "GroupInvite" AS gi INNER JOIN
+								"Group" AS g ON gi.groupID = g.id INNER JOIN
+								"User" AS u ON g.ownerID = u.id
+								WHERE gi.userID = ?;`, userID)
+
+	groupList := []*model.Group{}
+
+	for rows.Next() {
+		newGroup := &model.Group{}
+		var firstName, lastName string
+		err := rows.Scan(&newGroup.ID, &newGroup.Name, &newGroup.UserCount, &firstName, &lastName, &newGroup.OwnerEmail)
+		newGroup.OwnerName = firstName + " " + lastName
+
+		if err != nil {
+			log.Println(err)
+			return []*model.Group{}, errors.New("database error")
+		}
+
+		groupList = append(groupList, newGroup)
+	}
+
+	err = rows.Err()
+
+	if err != nil {
+		log.Println(err)
+		return []*model.Group{}, errors.New("database error")
+	}
+
+	return groupList, nil
 }
 
 // JoinGroupFromInvite -

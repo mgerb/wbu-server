@@ -21,17 +21,20 @@ func RegisterRoutes(app *echo.Echo) {
 	//groups
 	app.GET("/group/getUserGroups", groupRoutes.GetUserGroups)
 	app.GET("/group/getGroupUsers/:groupID", groupRoutes.GetGroupUsers)
+	app.GET("/group/getGroupInvites", groupRoutes.GetGroupInvites)
 
 	//user
 	app.POST("/user/createUser", userRoutes.CreateUser)
 	app.POST("/user/login", userRoutes.Login)
 	app.POST("/user/loginFacebook", userRoutes.LoginFacebook)
 	app.POST("/user/searchByName", userRoutes.SearchUserByName)
+	app.POST("/user/updateFCMToken", userRoutes.UpdateFCMToken)
 
 	//groups
 	app.POST("/group/createGroup", groupRoutes.CreateGroup)
 	app.POST("/group/searchPublicGroups", groupRoutes.SearchPublicGroups)
 	app.POST("/group/joinPublicGroup", groupRoutes.JoinPublicGroup)
+	app.POST("/group/inviteUserToGroup", groupRoutes.InviteUserToGroup)
 
 	// messages
 	app.GET("/group/getMessages/:groupID/:timestamp", groupRoutes.GetMessages)

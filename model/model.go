@@ -24,7 +24,7 @@ type Group struct {
 	OwnerName  string         `json:"ownerName,omitempty"`
 	UserCount  int            `json:"userCount,omitempty"`
 	Password   sql.NullString `json:"-"`
-	Locked     bool           `json:"locked"` // if the group is password protected
+	Locked     bool           `json:"locked,omitempty"` // if the group is password protected
 	Public     bool           `json:"public,omitempty"`
 }
 
