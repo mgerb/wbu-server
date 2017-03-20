@@ -6,42 +6,21 @@ import (
 	"log"
 
 	_ "github.com/mattn/go-sqlite3"
-	redis "gopkg.in/redis.v5"
 )
-
-// Client - redis client
-var Client *redis.Client
 
 // SQL - sqlite database connection
 var SQL *sql.DB
 
-func Connect(address string, password string) {
+// Connect - start database
+func Start(databaseName string) {
 	var err error
 	// start sqlite database
-	SQL, err = sql.Open("sqlite3", "./database.db")
+	SQL, err = sql.Open("sqlite3", databaseName)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	InitializeDatabase()
-
-	// REMOVE LATER
-	options := &redis.Options{
-		Addr:     address,
-		Password: password,
-		DB:       0,
-	}
-
-	Client = redis.NewClient(options)
-
-	test := Client.Ping()
-	if test.Val() == "PONG" {
-		fmt.Println("Database connected...")
-	} else {
-		fmt.Println("Database connection failed!")
-		fmt.Println(test.Err())
-	}
-	// --------------
 }
 
 // InitializeDatabase - initial database scripts

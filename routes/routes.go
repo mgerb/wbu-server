@@ -35,6 +35,8 @@ func RegisterRoutes(app *echo.Echo) {
 	app.POST("/group/searchPublicGroups", groupRoutes.SearchPublicGroups)
 	app.POST("/group/joinPublicGroup", groupRoutes.JoinPublicGroup)
 	app.POST("/group/inviteUserToGroup", groupRoutes.InviteUserToGroup)
+	app.POST("/group/joinGroupFromInvite", groupRoutes.JoinGroupFromInvite)
+	app.POST("/group/leaveGroup", groupRoutes.LeaveGroup)
 
 	// messages
 	app.GET("/group/getMessages/:groupID/:timestamp", groupRoutes.GetMessages)

@@ -38,3 +38,7 @@ type Message struct {
 	Content   string `json:"Content,omitempty"`
 	Timestamp string `json:"timestamp,omitempty"`
 }
+
+// GeoLocation - geo location model
+type GeoLocation struct {
+}

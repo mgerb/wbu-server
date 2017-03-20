@@ -1,14 +1,14 @@
 package config
 
 import (
-	"../operations/lua"
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/labstack/echo/engine"
 	"io/ioutil"
 	"log"
 	"os"
+
+	"github.com/labstack/echo/engine"
 )
 
 var Config configStruct
@@ -19,16 +19,14 @@ type configFlags struct {
 }
 
 type configStruct struct {
-	ServerConfig     engine.Config `json:"ServerConfig"`
-	DatabaseAddress  string        `json:"DatabaseAddress"`
-	DatabasePassword string        `json:"DatabasePassword"`
-	TokenSecret      string        `json:"TokenSecret"`
+	ServerConfig engine.Config `json:"ServerConfig"`
+	TokenSecret  string        `json:"TokenSecret"`
+	DatabaseName string        `json:"DatabaseName"`
 }
 
 func Init() {
 	readConfigFile()
 	parseFlags()
-	lua.Init()
 }
 
 func readConfigFile() {

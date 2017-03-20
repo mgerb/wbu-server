@@ -3,15 +3,10 @@ package groupOperations
 import (
 	"errors"
 	"strconv"
-
-	"../../db"
 )
 
 // StoreGeoLocation -
 func StoreGeoLocation(userID string, groupID string, latitude string, longitude string) error {
-
-	pipe := db.Client.Pipeline()
-	defer pipe.Close()
 
 	//DO VALIDATION
 	//check if user exists in group before storing message

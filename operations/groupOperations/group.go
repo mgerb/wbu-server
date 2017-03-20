@@ -37,7 +37,9 @@ func CreateGroup(groupName string, userID string, password string, public bool) 
 	if err != nil {
 		log.Println(err)
 		return errors.New("database error")
-	} else if groupExists {
+	}
+
+	if groupExists {
 		return errors.New("group already exists")
 	}
 
@@ -312,21 +314,40 @@ func InviteUserToGroup(ownerID string, userID string, groupID string) error {
 	// check if ownerID = group.ownerID
 	// check if user exists
 	// check if user already exists in group
-	var validTransaction bool
-	err = tx.QueryRow(`SELECT EXISTS(SELECT 1 FROM "Group" WHERE "ownerID" = ? AND "id" = ?)
-						AND EXISTS(SELECT 1 FROM "User" WHERE "id" = ?)
-						AND NOT EXISTS(SELECT 1 FROM "UserGroup" WHERE "userID" = ? AND "groupID" = ?);`, ownerID, groupID, userID, userID, groupID).Scan(&validTransaction)
+	var userIsOwner bool
+	var userExists bool
+	var userInGroup bool
+	var userHasInvite bool
+	row := tx.QueryRow(`SELECT EXISTS(SELECT 1 FROM "Group" WHERE "ownerID" = ? AND "id" = ?),
+						EXISTS(SELECT 1 FROM "User" WHERE "id" = ?),
+						EXISTS(SELECT 1 FROM "UserGroup" WHERE "userID" = ? AND "groupID" = ?),
+						EXISTS(SELECT 1 FROM "GroupInvite" WHERE "userID" = ? AND "groupID" = ?);`, ownerID, groupID, userID, userID, groupID, userID, groupID)
 
-	if !validTransaction {
-		return errors.New("invalid invite")
-	} else if err != nil {
+	err = row.Scan(&userIsOwner, &userExists, &userInGroup, &userHasInvite)
+
+	if err != nil {
 		log.Println(err)
 		return errors.New("database error")
 	}
 
+	if !userIsOwner {
+		return errors.New("invalid owner")
+	}
+
+	if !userExists {
+		return errors.New("invalid user")
+	}
+
+	if userInGroup {
+		return errors.New("user in group")
+	}
+
+	if userHasInvite {
+		return errors.New("user has invite")
+	}
+
 	// insert (if not exists in table already) into GroupInvite userID and groupID
-	_, err = tx.Exec(`INSERT INTO "GroupInvite" (userID, groupID) SELECT ?, ?
-						WHERE NOT EXISTS(SELECT 1 FROM "GroupInvite" WHERE "userID" = ? AND "groupID" = ?);`, userID, groupID, userID, groupID)
+	_, err = tx.Exec(`INSERT INTO "GroupInvite" (userID, groupID) SELECT ?, ?;`, userID, groupID, userID, groupID)
 
 	if err != nil {
 		log.Println(err)
@@ -376,9 +397,50 @@ func GetGroupInvites(userID string) ([]*model.Group, error) {
 // JoinGroupFromInvite -
 func JoinGroupFromInvite(userID string, groupID string) error {
 
-	// check if user has invite to group
+	tx, err := db.SQL.Begin()
+	if err != nil {
+		log.Println(err)
+		return errors.New("database error")
+	}
 
-	// insert into UserGroup userId and groupID
+	defer tx.Commit()
+
+	// check if user has group invite
+	var userHasInvite bool
+	err = tx.QueryRow(`SELECT EXISTS(SELECT 1 FROM "GroupInvite" WHERE userID = ? AND groupID = ?);`, userID, groupID).Scan(&userHasInvite)
+
+	if !userHasInvite {
+		return errors.New("invalid invite")
+	} else if err != nil {
+		log.Println(err)
+		return errors.New("database error")
+	}
+
+	// delete the invite from GroupInvite
+	_, err = tx.Exec(`DELETE FROM "GroupInvite" WHERE userID = ? AND groupID = ?;`, userID, groupID)
+
+	if err != nil {
+		log.Println(err)
+		return errors.New("database error")
+	}
+
+	// insert user into group
+	_, err = tx.Exec(`INSERT INTO "UserGroup" (userID, groupID) VALUES(?, ?);`, userID, groupID)
+
+	if err != nil {
+		log.Println(err)
+		tx.Rollback()
+		return errors.New("database error")
+	}
+
+	// update userCount in Group table
+	_, err = tx.Exec(`UPDATE "Group" SET userCount = userCount + 1 WHERE id = ?;`, groupID)
+
+	if err != nil {
+		tx.Rollback()
+		log.Println(err)
+		return errors.New("database error")
+	}
 
 	return nil
 }
@@ -386,9 +448,52 @@ func JoinGroupFromInvite(userID string, groupID string) error {
 // LeaveGroup -
 func LeaveGroup(userID string, groupID string) error {
 
-	// check if user is group owner
+	tx, err := db.SQL.Begin()
+	if err != nil {
+		log.Println(err)
+		return errors.New("database error")
+	}
 
-	// delete from UserGroup if user is not owner
+	defer tx.Commit()
+
+	// check if user is group owner
+	// check if user exists in group
+	var userIsOwner bool
+	var userExistsInGroup bool
+	err = tx.QueryRow(`SELECT EXISTS(SELECT 1 FROM "Group" WHERE id = ? AND ownerID = ?),
+						EXISTS(SELECT 1 FROM "UserGroup" WHERE groupID = ? AND userID = ?);`, groupID, userID, groupID, userID).Scan(&userIsOwner, &userExistsInGroup)
+
+	if err != nil {
+		log.Println(err)
+		return errors.New("database error")
+	}
+
+	// if user is owner
+	if userIsOwner {
+		return errors.New("user is owner")
+	}
+
+	// if user is not in group
+	if !userExistsInGroup {
+		return errors.New("user not in group")
+	}
+
+	// delete from UserGroup where userID and groupID
+	_, err = tx.Exec(`DELETE FROM "UserGroup" WHERE userID = ? AND groupID = ?;`, userID, groupID)
+
+	if err != nil {
+		log.Println(err)
+		return errors.New("database error")
+	}
+
+	// update userCount in Group table
+	_, err = tx.Exec(`UPDATE "Group" SET userCount = userCount - 1 WHERE id = ?;`, groupID)
+
+	if err != nil {
+		tx.Rollback()
+		log.Println(err)
+		return errors.New("database error")
+	}
 
 	return nil
 }
