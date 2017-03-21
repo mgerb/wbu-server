@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"./geoRoutes"
 	"./groupRoutes"
 	"./middleware"
 	"./userRoutes"
@@ -8,7 +9,7 @@ import (
 	"github.com/labstack/echo"
 )
 
-//register routes
+//RegisterRoutes -
 func RegisterRoutes(app *echo.Echo) {
 
 	middleware.ApplyMiddleware(app)
@@ -16,29 +17,35 @@ func RegisterRoutes(app *echo.Echo) {
 	app.GET("/test", userRoutes.HandleTest)
 
 	//user
-	app.GET("/user/groups", userRoutes.GetGroups)
-	app.GET("/user/invites", userRoutes.GetInvites)
 	app.GET("/user/refreshJWT", userRoutes.RefreshJWT)
 
 	//groups
-	app.GET("/group/members/:groupID", groupRoutes.GetGroupMembers)
-	app.GET("/group/messages/:groupID", groupRoutes.GetMessages)
-	app.GET("/group/getGeoLocations/:groupID", groupRoutes.GetGeoLocations)
+	app.GET("/group/getUserGroups", groupRoutes.GetUserGroups)
+	app.GET("/group/getGroupUsers/:groupID", groupRoutes.GetGroupUsers)
+	app.GET("/group/getGroupInvites", groupRoutes.GetGroupInvites)
 
 	//user
 	app.POST("/user/createUser", userRoutes.CreateUser)
-	app.POST("/user/deleteUser", userRoutes.DeleteUser)
 	app.POST("/user/login", userRoutes.Login)
 	app.POST("/user/loginFacebook", userRoutes.LoginFacebook)
+	app.POST("/user/searchByName", userRoutes.SearchUserByName)
+	app.POST("/user/updateFCMToken", userRoutes.UpdateFCMToken)
 
 	//groups
 	app.POST("/group/createGroup", groupRoutes.CreateGroup)
-	app.POST("/group/inviteUser", groupRoutes.InviteUser)
-	app.POST("/group/joinGroup", groupRoutes.JoinGroup)
+	app.POST("/group/searchPublicGroups", groupRoutes.SearchPublicGroups)
+	app.POST("/group/joinPublicGroup", groupRoutes.JoinPublicGroup)
+	app.POST("/group/inviteUserToGroup", groupRoutes.InviteUserToGroup)
+	app.POST("/group/joinGroupFromInvite", groupRoutes.JoinGroupFromInvite)
 	app.POST("/group/leaveGroup", groupRoutes.LeaveGroup)
+	app.POST("/group/kickUserFromGroup", groupRoutes.KickUserFromGroup)
 	app.POST("/group/deleteGroup", groupRoutes.DeleteGroup)
-	app.POST("/group/storeMessage", groupRoutes.StoreMessage)
 
-	//geo
-	app.POST("/group/storeGeoLocation", groupRoutes.StoreGeoLocation)
+	// geo
+	app.POST("/geo/storeGeoLocation", geoRoutes.StoreGeoLocation)
+	app.GET("/geo/getGeoLocations/:groupID", geoRoutes.GetGeoLocations)
+
+	// messages
+	app.GET("/group/getMessages/:groupID/:timestamp", groupRoutes.GetMessages)
+	app.POST("/group/storeMessage", groupRoutes.StoreMessage)
 }

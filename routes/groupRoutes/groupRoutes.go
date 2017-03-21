@@ -10,8 +10,10 @@ import (
 func CreateGroup(ctx echo.Context) error {
 	userID := ctx.Get("userID").(string)
 	groupName := ctx.FormValue("groupName")
+	password := ctx.FormValue("password")
+	public := ctx.FormValue("public") != ""
 
-	err := groupOperations.CreateGroup(groupName, userID)
+	err := groupOperations.CreateGroup(groupName, userID, password, public)
 
 	switch err {
 	case nil:
@@ -21,17 +23,60 @@ func CreateGroup(ctx echo.Context) error {
 	}
 }
 
-func GetGroupMembers(ctx echo.Context) error {
+//JoinPublicGroup - create a new group with groupName and user id as the owner
+func JoinPublicGroup(ctx echo.Context) error {
 	userID := ctx.Get("userID").(string)
-	groupID := ctx.Param("groupID")
+	groupID := ctx.FormValue("groupID")
+	password := ctx.FormValue("password")
 
-	members, err := groupOperations.GetGroupMembers(userID, groupID)
+	err := groupOperations.JoinPublicGroup(userID, groupID, password)
 
 	switch err {
 	case nil:
-		//maybe change this end point in future
-		//return ctx.JSON(200, members)
-		return ctx.Blob(200, response.JSON_HEADER, []byte(members.(string)))
+		return ctx.JSON(200, response.Json("Group joined.", response.SUCCESS))
+	default:
+		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
+	}
+}
+
+// SearchPublicGroups -
+func SearchPublicGroups(ctx echo.Context) error {
+	groupName := ctx.FormValue("groupName")
+
+	groups, err := groupOperations.SearchPublicGroups(groupName)
+
+	switch err {
+	case nil:
+		return ctx.JSON(200, groups)
+	default:
+		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
+	}
+}
+
+// GetUserGroups -
+func GetUserGroups(ctx echo.Context) error {
+	userID := ctx.Get("userID").(string)
+
+	groups, err := groupOperations.GetUserGroups(userID)
+
+	switch err {
+	case nil:
+		return ctx.JSON(200, groups)
+	default:
+		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
+	}
+}
+
+// GetGroupUsers -
+func GetGroupUsers(ctx echo.Context) error {
+	userID := ctx.Get("userID").(string)
+	groupID := ctx.Param("groupID")
+
+	userList, err := groupOperations.GetGroupUsers(userID, groupID)
+
+	switch err {
+	case nil:
+		return ctx.JSON(200, userList)
 	default:
 		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
 	}
@@ -57,46 +102,64 @@ func StoreMessage(ctx echo.Context) error {
 func GetMessages(ctx echo.Context) error {
 	userID := ctx.Get("userID").(string)
 	groupID := ctx.Param("groupID")
+	timestamp := ctx.Param("timestamp")
 
-	messages, err := groupOperations.GetUserGroupMessages(groupID, userID)
+	messages, err := groupOperations.GetUserGroupMessages(groupID, userID, timestamp)
 
 	switch err {
 	case nil:
-		return ctx.JSON(200, map[string]interface{}{"messages": messages})
+		return ctx.JSON(200, messages)
 	default:
 		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
 	}
 }
 
-func InviteUser(ctx echo.Context) error {
+// InviteUserToGroup - invite new user to a group
+func InviteUserToGroup(ctx echo.Context) error {
 	userID := ctx.Get("userID").(string)
-	groupID := ctx.FormValue("groupID")
-	invUserID := ctx.FormValue("invUserID")
-
-	err := groupOperations.InviteToGroup(userID, groupID, invUserID)
-
-	switch err {
-	case nil:
-		return ctx.JSON(200, response.Json("User invited.", response.SUCCESS))
-	default:
-		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
-	}
-}
-
-func JoinGroup(ctx echo.Context) error {
-	userID := ctx.Get("userID").(string)
+	inviteUserID := ctx.FormValue("inviteUserID")
 	groupID := ctx.FormValue("groupID")
 
-	err := groupOperations.JoinGroup(userID, groupID)
+	err := groupOperations.InviteUserToGroup(userID, inviteUserID, groupID)
 
 	switch err {
 	case nil:
-		return ctx.JSON(200, response.Json("Joined group.", response.SUCCESS))
+		return ctx.JSON(200, response.Json("user invited", response.SUCCESS))
 	default:
 		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
 	}
 }
 
+// GetGroupInvites -
+func GetGroupInvites(ctx echo.Context) error {
+	userID := ctx.Get("userID").(string)
+
+	groupInvites, err := groupOperations.GetGroupInvites(userID)
+
+	switch err {
+	case nil:
+		return ctx.JSON(200, groupInvites)
+	default:
+		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
+	}
+}
+
+// JoinGroupFromInvite -
+func JoinGroupFromInvite(ctx echo.Context) error {
+	userID := ctx.Get("userID").(string)
+	groupID := ctx.FormValue("groupID")
+
+	err := groupOperations.JoinGroupFromInvite(userID, groupID)
+
+	switch err {
+	case nil:
+		return ctx.JSON(200, response.Json("Group joined.", response.SUCCESS))
+	default:
+		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
+	}
+}
+
+// LeaveGroup -
 func LeaveGroup(ctx echo.Context) error {
 	userID := ctx.Get("userID").(string)
 	groupID := ctx.FormValue("groupID")
@@ -111,45 +174,32 @@ func LeaveGroup(ctx echo.Context) error {
 	}
 }
 
-func DeleteGroup(ctx echo.Context) error {
-	userID := ctx.Get("userID").(string)
+// KickUserFromGroup -
+func KickUserFromGroup(ctx echo.Context) error {
+	ownerID := ctx.Get("userID").(string)
+	userID := ctx.FormValue("userID")
 	groupID := ctx.FormValue("groupID")
 
-	err := groupOperations.DeleteGroup(userID, groupID)
+	err := groupOperations.KickUserFromGroup(ownerID, userID, groupID)
+
+	switch err {
+	case nil:
+		return ctx.JSON(200, response.Json("User kicked.", response.SUCCESS))
+	default:
+		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
+	}
+}
+
+// DeleteGroup -
+func DeleteGroup(ctx echo.Context) error {
+	ownerID := ctx.Get("userID").(string)
+	groupID := ctx.FormValue("groupID")
+
+	err := groupOperations.DeleteGroup(ownerID, groupID)
 
 	switch err {
 	case nil:
 		return ctx.JSON(200, response.Json("Group deleted.", response.SUCCESS))
-	default:
-		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
-	}
-}
-
-func StoreGeoLocation(ctx echo.Context) error {
-	userID := ctx.Get("userID").(string)
-	groupID := ctx.FormValue("groupID")
-	latitude := ctx.FormValue("latitude")
-	longitude := ctx.FormValue("longitude")
-
-	err := groupOperations.StoreGeoLocation(userID, groupID, latitude, longitude)
-
-	switch err {
-	case nil:
-		return ctx.JSON(200, response.Json("Location stored.", response.SUCCESS))
-	default:
-		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
-	}
-}
-
-func GetGeoLocations(ctx echo.Context) error {
-	userID := ctx.Get("userID").(string)
-	groupID := ctx.Param("groupID")
-
-	geoLocations, err := groupOperations.GetGeoLocations(userID, groupID)
-
-	switch err {
-	case nil:
-		return ctx.JSON(200, map[string]interface{}{"geoLocations": geoLocations})
 	default:
 		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
 	}

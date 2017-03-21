@@ -1,7 +1,6 @@
 package userRoutes
 
 import (
-	"../../operations/groupOperations"
 	"../../operations/userOperations"
 	"../../utils/response"
 	"../../utils/tokens"
@@ -22,33 +21,35 @@ func HandleTest(ctx echo.Context) error {
 	*/
 
 	/*
-		err := groupOperations.StoreUserGroupMessages("1", "fbID:10207835974837361", "te;lsakjfpo84owjofijsakjfhdasouhrfouashfst123")
+			err := groupOperations.StoreUserGroupMessages("1", "fbID:10207835974837361", "te;lsakjfpo84owjofijsakjfhdasouhrfouashfst123")
+
+			switch err {
+			case nil:
+				return ctx.JSON(200, response.Json("Message Stored.", response.SUCCESS))
+			default:
+				return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
+			}
+
+		messages, err := groupOperations.GetUserGroupMessages("1", "fbID:10207835974837361")
 
 		switch err {
 		case nil:
-			return ctx.JSON(200, response.Json("Message Stored.", response.SUCCESS))
+			return ctx.JSON(200, messages)
 		default:
 			return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
 		}
-
 	*/
-	messages, err := groupOperations.GetUserGroupMessages("1", "fbID:10207835974837361")
-
-	switch err {
-	case nil:
-		return ctx.JSON(200, messages)
-	default:
-		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
-	}
+	return nil
 }
 
 //CreateUser - create user account - currently takes in userName and password
 func CreateUser(ctx echo.Context) error {
 	email := ctx.FormValue("email")
 	password := ctx.FormValue("password")
-	fullName := ctx.FormValue("fullName")
+	firstName := ctx.FormValue("firstName")
+	lastName := ctx.FormValue("lastName")
 
-	err := userOperations.CreateUser(email, password, fullName)
+	err := userOperations.CreateUser(email, password, firstName, lastName)
 
 	switch err {
 	case nil:
@@ -58,7 +59,8 @@ func CreateUser(ctx echo.Context) error {
 	}
 }
 
-//DeleteUser - deletes all user information based on their userID
+// TODO
+// DeleteUser - deletes all user information based on their userID
 func DeleteUser(ctx echo.Context) error {
 	userID := ctx.Get("userID").(string)
 
@@ -72,7 +74,7 @@ func DeleteUser(ctx echo.Context) error {
 	}
 }
 
-//Login - log the user in - on success send jwt
+// Login - log the user in - on success send jwt
 func Login(ctx echo.Context) error {
 	email := ctx.FormValue("email")
 	password := ctx.FormValue("password")
@@ -87,6 +89,7 @@ func Login(ctx echo.Context) error {
 	}
 }
 
+// LoginFacebook -
 func LoginFacebook(ctx echo.Context) error {
 	//facebook access token
 	accessToken := ctx.FormValue("accessToken")
@@ -102,43 +105,47 @@ func LoginFacebook(ctx echo.Context) error {
 	}
 }
 
-func GetGroups(ctx echo.Context) error {
-	userID := ctx.Get("userID").(string)
-
-	groups, err := userOperations.GetGroups(userID)
+// SearchUserByName -
+func SearchUserByName(ctx echo.Context) error {
+	name := ctx.FormValue("name")
+	userList, err := userOperations.SearchUserByName(name)
 
 	switch err {
 	case nil:
-		return ctx.JSON(200, groups)
+		return ctx.JSON(200, userList)
 	default:
 		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
 	}
 }
 
-func GetInvites(ctx echo.Context) error {
-	userID := ctx.Get("userID").(string)
-
-	invites, err := userOperations.GetInvites(userID)
-
-	switch err {
-	case nil:
-		return ctx.JSON(200, invites)
-
-	default:
-		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
-	}
-}
-
+// RefreshJWT -
 func RefreshJWT(ctx echo.Context) error {
 	email := ctx.Get("email").(string)
 	userID := ctx.Get("userID").(string)
-	fullName := ctx.Get("fullName").(string)
+	firstName := ctx.Get("firstName").(string)
+	lastName := ctx.Get("lastName").(string)
 
-	token, lastRefreshTime, err := tokens.GetJWT(email, userID, fullName)
+	token, lastRefreshTime, err := tokens.GetJWT(email, userID, firstName, lastName)
 
 	switch err {
 	case nil:
 		return ctx.JSON(200, map[string]interface{}{"jwt": token, "lastRefreshTime": lastRefreshTime})
+
+	default:
+		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
+	}
+}
+
+// UpdateFCMToken -
+func UpdateFCMToken(ctx echo.Context) error {
+	userID := ctx.Get("userID").(string)
+	token := ctx.FormValue("token")
+
+	err := userOperations.UpdateFCMToken(userID, token)
+
+	switch err {
+	case nil:
+		return ctx.JSON(200, response.Json("token updated", response.SUCCESS))
 
 	default:
 		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))

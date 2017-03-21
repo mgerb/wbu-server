@@ -10,7 +10,7 @@ import (
 	"github.com/labstack/echo/middleware"
 )
 
-//ApplyMiddleware - applies middleware to iris framework
+//ApplyMiddleware -
 func ApplyMiddleware(app *echo.Echo) {
 	app.Use(checkJWT)
 
@@ -43,14 +43,16 @@ func checkJWT(next echo.HandlerFunc) echo.HandlerFunc {
 		case nil:
 			if claims, ok := token.Claims.(jwt.MapClaims); token.Valid && ok {
 
-				email, ok_email := claims["email"]
-				userID, ok_userID := claims["userID"]
-				fullName, ok_fullName := claims["fullName"]
+				email, okEmail := claims["email"]
+				userID, okUserID := claims["userID"]
+				firstName, okFirstName := claims["firstName"]
+				lastName, okLastName := claims["lastName"]
 
-				if ok_email && ok_userID && ok_fullName {
+				if okEmail && okUserID && okFirstName && okLastName {
 					ctx.Set("email", email.(string))
 					ctx.Set("userID", userID.(string))
-					ctx.Set("fullName", fullName.(string))
+					ctx.Set("firstName", firstName.(string))
+					ctx.Set("lastName", lastName.(string))
 				} else {
 					return ctx.JSON(500, response.Json("Token claims error.", response.INVALID_AUTHENTICATION))
 				}
@@ -70,6 +72,7 @@ func checkJWT(next echo.HandlerFunc) echo.HandlerFunc {
 
 var prodRoutes = map[string]bool{
 	"/user/loginFacebook": true,
+	"/user/login":         true,
 }
 
 var devRoutes = map[string]bool{

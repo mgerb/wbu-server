@@ -2,176 +2,241 @@ package userOperations
 
 import (
 	"errors"
+	"log"
 	"regexp"
-	"strconv"
 
-	"../lua"
-	redis "gopkg.in/redis.v5"
+	"database/sql"
 
 	"../../db"
-	"../../model/groupModel"
-	"../../model/userModel"
+	"../../model"
+	"../../utils"
 	"../../utils/regex"
 	"../../utils/tokens"
 	"../fb"
 	"golang.org/x/crypto/bcrypt"
 )
 
-//CreateUser - store userName/password in hash
-func CreateUser(email string, password string, fullName string) error {
+//CreateUser -
+func CreateUser(email string, password string, firstName string, lastName string) error {
 
-	//validation password
+	//validate password
 	if !regexp.MustCompile(regex.PASSWORD).MatchString(password) {
-		return errors.New("Invalid password.")
+		return errors.New("invalid password")
+	}
+
+	passwordHash, err := utils.GenerateHash(password)
+
+	if err != nil {
+		log.Println(err)
+		return errors.New("password hash error")
 	}
 
 	//validate email
 	if !regexp.MustCompile(regex.EMAIL).MatchString(email) {
-		return errors.New("Invalid email.")
+		return errors.New("invalid email")
 	}
 
-	//validate full name
-	if !regexp.MustCompile(regex.FULL_NAME).MatchString(fullName) {
-		return errors.New("Invalid name.")
+	nameLength := len(firstName + lastName)
+
+	// validate first/last name
+	if nameLength < 2 || nameLength > 40 {
+		return errors.New("invalid name")
 	}
 
-	//check if the email already exists in redis
-	emailExists := db.Client.HExists(userModel.USER_ID(), email).Val()
-
-	if emailExists {
-		return errors.New("That email is already taken.")
+	// start sql transaction
+	tx, err := db.SQL.Begin()
+	if err != nil {
+		log.Println(err)
+		return errors.New("database error")
 	}
 
-	//get a new user id from the id pool
-	temp, _ := db.Client.Incr(userModel.USER_KEY_STORE()).Result()
-	newID := strconv.FormatInt(temp, 10)
+	// commit the transaction when the function returns
+	defer tx.Commit()
 
-	//prepend user id with prefix
-	newID = userModel.GetUserID(newID)
+	//check if the email already exists
+	var userExists bool
+	err = tx.QueryRow(`SELECT EXISTS(SELECT 1 FROM "User" WHERE "email" = ?);`, email).Scan(&userExists)
 
-	pipe := db.Client.Pipeline()
-	defer pipe.Close()
+	// return err or if email already exists
+	if err != nil {
+		log.Println(err)
+		return errors.New("database error")
+	} else if userExists {
+		return errors.New("email taken")
+	}
 
-	//map email to user id
-	pipe.HSet(userModel.USER_ID(), email, newID)
-
-	//set user object in redis
-	pipe.HMSet(userModel.USER_HASH(newID), userModel.USER_HASH_MAP(email, generateHash(password), "0", fullName))
-
-	_, err := pipe.Exec()
-
-	return err
-}
-
-//Login - check if password and userName are correct
-func Login(email string, password string) (map[string]interface{}, error) {
-	userID, err := db.Client.HGet(userModel.USER_ID(), email).Result()
+	// insert into User email, passwordHash, firstName, and lastName
+	_, err = tx.Exec(`INSERT INTO "User" (email, password, firstName, lastName) VALUES (?, ?, ?, ?);`, email, passwordHash, firstName, lastName)
 
 	if err != nil {
-		return map[string]interface{}{}, errors.New("User does not exist.")
+		log.Println(err)
+		return errors.New("database error")
 	}
 
-	result, err_password := db.Client.HGetAll(userModel.USER_HASH(userID)).Result()
-
-	if err_password != nil {
-		return map[string]interface{}{}, errors.New("Error retrieving account information.")
-	}
-
-	savedPassword := result["password"]
-	fullName := result["fullName"]
-
-	if len(savedPassword) < 5 {
-		return map[string]interface{}{}, errors.New("Invalid account")
-	}
-
-	if bcrypt.CompareHashAndPassword([]byte(savedPassword), []byte(password)) != nil {
-		return map[string]interface{}{}, errors.New("Invalid password.")
-	}
-
-	token, lastRefreshTime, err_token := tokens.GetJWT(email, userID, fullName)
-
-	return map[string]interface{}{
-		"email":           email,
-		"userID":          userID,
-		"fullName":        fullName,
-		"jwt":             token,
-		"lastRefreshTime": lastRefreshTime,
-	}, err_token
+	return nil
 }
 
-func LoginFacebook(accessToken string) (map[string]interface{}, error) {
-	response, err_fb := fb.Me(accessToken)
+//Login - check if valid credentials - create JWT and return User object
+func Login(email string, password string) (*model.User, error) {
 
-	if err_fb != nil {
-		return map[string]interface{}{}, errors.New("Invalid FB token")
+	// new user struct
+	newUser := &model.User{}
+
+	// get user information
+	err := db.SQL.QueryRow(`SELECT id, email, firstName, lastName, password FROM "User" WHERE "email" = ?;`, email).Scan(&newUser.ID, &newUser.Email, &newUser.FirstName, &newUser.LastName, &newUser.Password)
+
+	if err != nil {
+		log.Println(err)
+		return newUser, errors.New("invalid user")
 	}
 
-	email := response["email"].(string)
-	fullName := response["name"].(string)
-	facebookID := response["id"].(string)
+	if bcrypt.CompareHashAndPassword([]byte(newUser.Password), []byte(password)) != nil {
+		return &model.User{}, errors.New("invalid password")
+	}
 
-	//prepend facebookID with "fb:" to not get mixed with regular user id's
-	userID := userModel.GetUserID_FB(facebookID)
+	token, lastRefreshTime, errToken := tokens.GetJWT(newUser.Email, newUser.ID, newUser.FirstName, newUser.LastName)
 
-	//check if hash key exists
-	userExists := db.Client.Exists(userModel.USER_HASH(userID)).Val()
+	if errToken != nil {
+		log.Println(err)
+		return &model.User{}, errors.New("jwt error")
+	}
 
-	//create user if not exists
-	if !userExists {
-		pipe := db.Client.Pipeline()
-		defer pipe.Close()
+	newUser.Jwt = token
+	newUser.LastRefreshTime = lastRefreshTime
 
-		//map users email to new id
-		pipe.HSet(userModel.USER_ID(), email, userID)
+	return newUser, nil
+}
 
-		//set user object in redis
-		pipe.HMSet(userModel.USER_HASH(userID), userModel.USER_HASH_MAP(email, "", "0", fullName))
+// LoginFacebook -
+func LoginFacebook(accessToken string) (*model.User, error) {
+	// check if valid facebook user
+	fbResponse, err := fb.Me(accessToken)
+	if err != nil {
+		return &model.User{}, errors.New("facebook error")
+	}
 
-		_, err_pipe := pipe.Exec()
+	// get the facebook user id
+	facebookID := fbResponse["id"].(string)
 
-		if err_pipe != nil {
-			return map[string]interface{}{}, errors.New("pipe error")
+	// new user struct
+	newUser := &model.User{}
+
+	// get user information
+	err = db.SQL.QueryRow(`SELECT id, email, firstName, lastName, facebookID FROM "User" WHERE "facebookID" = ?;`, facebookID).Scan(&newUser.ID, &newUser.Email, &newUser.FirstName, &newUser.LastName, &newUser.FacebookID)
+
+	// store user info if not exists
+	if err == sql.ErrNoRows {
+		err := createFacebookUser(fbResponse)
+
+		if err != nil {
+			log.Println(err)
+			return &model.User{}, errors.New("database error")
 		}
+
+		// get user information
+		err = db.SQL.QueryRow(`SELECT id, email, firstName, lastName, facebookID FROM "User" WHERE "facebookID" = ?;`, facebookID).Scan(&newUser.ID, &newUser.Email, &newUser.FirstName, &newUser.LastName, &newUser.FacebookID.String)
+
+		if err != nil {
+			log.Println(err)
+			return &model.User{}, errors.New("database error")
+		}
+
+	} else if err != nil {
+		log.Println(err)
+		return &model.User{}, errors.New("database error")
 	}
 
-	token, lastRefreshTime, err_token := tokens.GetJWT(email, userID, fullName)
+	token, lastRefreshTime, errToken := tokens.GetJWT(newUser.Email, newUser.ID, newUser.FirstName, newUser.LastName)
 
-	return map[string]interface{}{
-		"email":           email,
-		"userID":          userID,
-		"fullName":        fullName,
-		"jwt":             token,
-		"lastRefreshTime": lastRefreshTime,
-	}, err_token
+	if errToken != nil {
+		log.Println(err)
+		return &model.User{}, errors.New("jwt error")
+	}
+
+	newUser.Jwt = token
+	newUser.LastRefreshTime = lastRefreshTime
+
+	return newUser, nil
 }
 
+func createFacebookUser(fbResponse map[string]interface{}) error {
+	// get facebook user's information from token
+	email := fbResponse["email"].(string)
+	firstName := fbResponse["first_name"].(string)
+	lastName := fbResponse["last_name"].(string)
+	facebookID := fbResponse["id"].(string)
+
+	_, err := db.SQL.Exec(`INSERT INTO "User" (email, firstName, lastName, facebookID) VALUES (?, ?, ?, ?);`, email, firstName, lastName, facebookID)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// SearchUserByName - return list of users that match name
+func SearchUserByName(name string) ([]*model.User, error) {
+
+	userList := []*model.User{}
+
+	// get user information
+	rows, err := db.SQL.Query(`SELECT id, email, firstName, lastName FROM "User" WHERE "firstName" || ' ' || "lastName" LIKE ?;`, "%"+name+"%")
+
+	if err != nil {
+		log.Println(err)
+		return []*model.User{}, errors.New("database error")
+	}
+
+	defer rows.Close()
+
+	// map query to user object list
+	for rows.Next() {
+		newUser := &model.User{}
+		err := rows.Scan(&newUser.ID, &newUser.Email, &newUser.FirstName, &newUser.LastName)
+
+		if err != nil {
+			log.Println(err)
+			return []*model.User{}, errors.New("database error")
+		}
+		userList = append(userList, newUser)
+	}
+
+	err = rows.Err()
+
+	if err != nil {
+		log.Println(err)
+		return []*model.User{}, errors.New("row error")
+	}
+
+	return userList, nil
+}
+
+// UpdateFCMToken - Update fcm token in user table
+func UpdateFCMToken(userID string, token string) error {
+
+	if token == "" {
+		return errors.New("invalid token")
+	}
+
+	_, err := db.SQL.Exec(`UPDATE "User" SET fcmToken = ? WHERE id = ?;`, token, userID)
+
+	if err != nil {
+		log.Println(err)
+		return errors.New("database error")
+	}
+
+	return nil
+}
+
+// DeleteUser -
 func DeleteUser(userID string) error {
 
-	script := redis.NewScript(lua.Use("DeleteUser.lua"))
+	// check if user exists
 
-	return script.Run(db.Client, []string{
-		userModel.USER_HASH(userID),
-		userModel.USER_ID(),
-		userModel.USER_GROUPS(userID),
-		userModel.USER_GROUP_INVITES(userID),
-	},
-		userID,
-		userModel.USER_GROUP_MESSAGES_KEY(),
-		groupModel.GROUP_MEMBERS_KEY(),
-		groupModel.GROUP_LOCATIONS_KEY(),
-	).Err()
-}
+	// delete from UserGroup table
 
-//GetUserGroups - get all the groups the user exists in
-func GetGroups(userID string) (map[string]string, error) {
-	return db.Client.HGetAll(userModel.USER_GROUPS(userID)).Result()
-}
+	// delete from User table
 
-func GetInvites(userID string) (map[string]string, error) {
-	return db.Client.HGetAll(userModel.USER_GROUP_INVITES(userID)).Result()
-}
-
-func generateHash(password string) string {
-	hash, _ := bcrypt.GenerateFromPassword([]byte(password), 0)
-	return string(hash)
+	return nil
 }
