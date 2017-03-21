@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"./geoRoutes"
 	"./groupRoutes"
 	"./middleware"
 	"./userRoutes"
@@ -37,6 +38,12 @@ func RegisterRoutes(app *echo.Echo) {
 	app.POST("/group/inviteUserToGroup", groupRoutes.InviteUserToGroup)
 	app.POST("/group/joinGroupFromInvite", groupRoutes.JoinGroupFromInvite)
 	app.POST("/group/leaveGroup", groupRoutes.LeaveGroup)
+	app.POST("/group/kickUserFromGroup", groupRoutes.KickUserFromGroup)
+	app.POST("/group/deleteGroup", groupRoutes.DeleteGroup)
+
+	// geo
+	app.POST("/geo/storeGeoLocation", geoRoutes.StoreGeoLocation)
+	app.GET("/geo/getGeoLocations/:groupID", geoRoutes.GetGeoLocations)
 
 	// messages
 	app.GET("/group/getMessages/:groupID/:timestamp", groupRoutes.GetMessages)

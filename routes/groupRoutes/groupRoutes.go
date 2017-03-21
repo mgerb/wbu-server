@@ -173,3 +173,34 @@ func LeaveGroup(ctx echo.Context) error {
 		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
 	}
 }
+
+// KickUserFromGroup -
+func KickUserFromGroup(ctx echo.Context) error {
+	ownerID := ctx.Get("userID").(string)
+	userID := ctx.FormValue("userID")
+	groupID := ctx.FormValue("groupID")
+
+	err := groupOperations.KickUserFromGroup(ownerID, userID, groupID)
+
+	switch err {
+	case nil:
+		return ctx.JSON(200, response.Json("User kicked.", response.SUCCESS))
+	default:
+		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
+	}
+}
+
+// DeleteGroup -
+func DeleteGroup(ctx echo.Context) error {
+	ownerID := ctx.Get("userID").(string)
+	groupID := ctx.FormValue("groupID")
+
+	err := groupOperations.DeleteGroup(ownerID, groupID)
+
+	switch err {
+	case nil:
+		return ctx.JSON(200, response.Json("Group deleted.", response.SUCCESS))
+	default:
+		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
+	}
+}

@@ -498,14 +498,102 @@ func LeaveGroup(userID string, groupID string) error {
 	return nil
 }
 
+// KickUserFromGroup -
+func KickUserFromGroup(ownerID string, userID string, groupID string) error {
+
+	if ownerID == userID {
+		return errors.New("invalid user")
+	}
+
+	// check if group owner
+	tx, err := db.SQL.Begin()
+	if err != nil {
+		log.Println(err)
+		return errors.New("database error")
+	}
+
+	defer tx.Commit()
+
+	// check if user is group owner
+	// check if user exists in group
+	var validOwner bool
+	var userExistsInGroup bool
+	err = tx.QueryRow(`SELECT EXISTS(SELECT 1 FROM "Group" WHERE id = ? AND ownerID = ?),
+						EXISTS(SELECT 1 FROM "UserGroup" WHERE groupID = ? AND userID = ?);`,
+		groupID, ownerID, groupID, userID).Scan(&validOwner, &userExistsInGroup)
+
+	if err != nil {
+		log.Println(err)
+		return errors.New("database error")
+	}
+
+	// if user is owner
+	if !validOwner {
+		return errors.New("invalid owner")
+	}
+
+	// if user is not in group
+	if !userExistsInGroup {
+		return errors.New("user not in group")
+	}
+
+	// delete from UserGroup where userID and groupID
+	_, err = tx.Exec(`DELETE FROM "UserGroup" WHERE userID = ? AND groupID = ?;`, userID, groupID)
+
+	if err != nil {
+		log.Println(err)
+		return errors.New("database error")
+	}
+
+	// update userCount in Group table
+	_, err = tx.Exec(`UPDATE "Group" SET userCount = userCount - 1 WHERE id = ?;`, groupID)
+
+	if err != nil {
+		tx.Rollback()
+		log.Println(err)
+		return errors.New("database error")
+	}
+
+	return nil
+}
+
 // DeleteGroup -
-func DeleteGroup(userID string, groupID string) error {
+func DeleteGroup(ownerID string, groupID string) error {
 
-	// check if user is owner
+	// check if group owner
+	tx, err := db.SQL.Begin()
+	if err != nil {
+		log.Println(err)
+		return errors.New("database error")
+	}
 
-	// delete from UserGroup where groupID = groupID
+	defer tx.Commit()
 
-	// delete from Group where id = groupID
+	// check if user is group owner
+	var validOwner bool
+	err = tx.QueryRow(`SELECT EXISTS(SELECT 1 FROM "Group" WHERE id = ? AND ownerID = ?);`, groupID, ownerID).Scan(&validOwner)
+
+	if err != nil {
+		log.Println(err)
+		return errors.New("database error")
+	}
+
+	// if user is owner
+	if !validOwner {
+		return errors.New("invalid owner")
+	}
+
+	_, err = tx.Exec(`DELETE FROM "Message" WHERE groupID = ?;
+						DELETE FROM "GeoLocation" WHERE groupID = ?;
+						DELETE FROM "GroupInvite" WHERE groupID = ?;
+						DELETE FROM "UserGroup" WHERE groupID = ?;
+						DELETE FROM "Group" WHERE id = ?;`,
+		groupID, groupID, groupID, groupID, groupID)
+
+	if err != nil {
+		log.Println(err)
+		return errors.New("database error")
+	}
 
 	return nil
 }

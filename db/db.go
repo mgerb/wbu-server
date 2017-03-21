@@ -84,7 +84,7 @@ func InitializeDatabase() {
 			groupID integer not null,
 			latitude real not null,
 			longitude real not null,
-			timestamp integer not null,
+			timestamp integer not null default CURRENT_TIMESTAMP,
 			
 			FOREIGN KEY (userID) REFERENCES "User" (userID),
 			FOREIGN KEY (groupID) REFERENCES "Group" (groupID)

@@ -94,7 +94,7 @@ func Login(email string, password string) (*model.User, error) {
 		return &model.User{}, errors.New("invalid password")
 	}
 
-	token, lastJwtRefresh, errToken := tokens.GetJWT(newUser.Email, newUser.ID, newUser.FirstName, newUser.LastName)
+	token, lastRefreshTime, errToken := tokens.GetJWT(newUser.Email, newUser.ID, newUser.FirstName, newUser.LastName)
 
 	if errToken != nil {
 		log.Println(err)
@@ -102,7 +102,7 @@ func Login(email string, password string) (*model.User, error) {
 	}
 
 	newUser.Jwt = token
-	newUser.LastJwtRefresh = lastJwtRefresh
+	newUser.LastRefreshTime = lastRefreshTime
 
 	return newUser, nil
 }
@@ -146,7 +146,7 @@ func LoginFacebook(accessToken string) (*model.User, error) {
 		return &model.User{}, errors.New("database error")
 	}
 
-	token, lastJwtRefresh, errToken := tokens.GetJWT(newUser.Email, newUser.ID, newUser.FirstName, newUser.LastName)
+	token, lastRefreshTime, errToken := tokens.GetJWT(newUser.Email, newUser.ID, newUser.FirstName, newUser.LastName)
 
 	if errToken != nil {
 		log.Println(err)
@@ -154,7 +154,7 @@ func LoginFacebook(accessToken string) (*model.User, error) {
 	}
 
 	newUser.Jwt = token
-	newUser.LastJwtRefresh = lastJwtRefresh
+	newUser.LastRefreshTime = lastRefreshTime
 
 	return newUser, nil
 }
@@ -212,18 +212,6 @@ func SearchUserByName(name string) ([]*model.User, error) {
 	return userList, nil
 }
 
-// DeleteUser -
-func DeleteUser(userID string) error {
-
-	// check if user exists
-
-	// delete from UserGroup table
-
-	// delete from User table
-
-	return nil
-}
-
 // UpdateFCMToken - Update fcm token in user table
 func UpdateFCMToken(userID string, token string) error {
 
@@ -237,6 +225,18 @@ func UpdateFCMToken(userID string, token string) error {
 		log.Println(err)
 		return errors.New("database error")
 	}
+
+	return nil
+}
+
+// DeleteUser -
+func DeleteUser(userID string) error {
+
+	// check if user exists
+
+	// delete from UserGroup table
+
+	// delete from User table
 
 	return nil
 }

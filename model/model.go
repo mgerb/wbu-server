@@ -4,15 +4,15 @@ import "database/sql"
 
 // User - user model
 type User struct {
-	ID             string         `json:"id,omitempty"`
-	Email          string         `json:"email,omitempty"`
-	FirstName      string         `json:"firstName,omitempty"`
-	LastName       string         `json:"lastName,omitempty"`
-	Password       string         `json:"-"`
-	FcmToken       sql.NullString `json:"-"`
-	FacebookID     sql.NullString `json:"-"`
-	Jwt            string         `json:"jwt,omitempty"`
-	LastJwtRefresh int64          `json:"lastJwtRefresh,omitempty"`
+	ID              string         `json:"id,omitempty"`
+	Email           string         `json:"email,omitempty"`
+	FirstName       string         `json:"firstName,omitempty"`
+	LastName        string         `json:"lastName,omitempty"`
+	Password        string         `json:"-"`
+	FcmToken        sql.NullString `json:"-"`
+	FacebookID      sql.NullString `json:"-"`
+	Jwt             string         `json:"jwt,omitempty"`
+	LastRefreshTime int64          `json:"lastRefreshTime,omitempty"`
 }
 
 // Group - group model
@@ -35,10 +35,19 @@ type Message struct {
 	GroupID   string `json:"groupID"`
 	FirstName string `json:"firstName,omitempty"`
 	LastName  string `json:"lastName,omitempty"`
-	Content   string `json:"Content,omitempty"`
+	Content   string `json:"content,omitempty"`
 	Timestamp string `json:"timestamp,omitempty"`
 }
 
 // GeoLocation - geo location model
 type GeoLocation struct {
+	ID        string `json:"id,omitempty"`
+	UserID    string `json:"userID,omitempty"`
+	GroupID   string `json:"groupID"`
+	FirstName string `json:"firstName,omitempty"`
+	LastName  string `json:"lastName,omitempty"`
+	Email     string `json:"email,omitempty"`
+	Latitude  string `json:"latitude,omitempty"`
+	Longitude string `json:"longitude,omitempty"`
+	Timestamp string `json:"timestamp,omitempty"`
 }

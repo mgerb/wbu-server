@@ -5,3 +5,4 @@ tls.crt
 main
 .vscode/
 database.db*
+debug
