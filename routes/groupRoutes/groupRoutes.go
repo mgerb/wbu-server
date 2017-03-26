@@ -82,38 +82,6 @@ func GetGroupUsers(ctx echo.Context) error {
 	}
 }
 
-//StoreMessage - store a message in a group
-func StoreMessage(ctx echo.Context) error {
-	userID := ctx.Get("userID").(string)
-	groupID := ctx.FormValue("groupID")
-	message := ctx.FormValue("message")
-
-	err := groupOperations.StoreUserGroupMessages(groupID, userID, message)
-
-	switch err {
-	case nil:
-		return ctx.JSON(200, response.Json("Message stored.", response.SUCCESS))
-	default:
-		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
-	}
-}
-
-//GetMessages - get all messages for group
-func GetMessages(ctx echo.Context) error {
-	userID := ctx.Get("userID").(string)
-	groupID := ctx.Param("groupID")
-	timestamp := ctx.Param("timestamp")
-
-	messages, err := groupOperations.GetUserGroupMessages(groupID, userID, timestamp)
-
-	switch err {
-	case nil:
-		return ctx.JSON(200, messages)
-	default:
-		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
-	}
-}
-
 // InviteUserToGroup - invite new user to a group
 func InviteUserToGroup(ctx echo.Context) error {
 	userID := ctx.Get("userID").(string)
@@ -200,6 +168,38 @@ func DeleteGroup(ctx echo.Context) error {
 	switch err {
 	case nil:
 		return ctx.JSON(200, response.Json("Group deleted.", response.SUCCESS))
+	default:
+		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
+	}
+}
+
+//StoreMessage - store a message in a group
+func StoreMessage(ctx echo.Context) error {
+	userID := ctx.Get("userID").(string)
+	groupID := ctx.FormValue("groupID")
+	message := ctx.FormValue("message")
+
+	err := groupOperations.StoreUserGroupMessages(groupID, userID, message)
+
+	switch err {
+	case nil:
+		return ctx.JSON(200, response.Json("Message stored.", response.SUCCESS))
+	default:
+		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
+	}
+}
+
+//GetMessages - get all messages for group
+func GetMessages(ctx echo.Context) error {
+	userID := ctx.Get("userID").(string)
+	groupID := ctx.Param("groupID")
+	timestamp := ctx.Param("timestamp")
+
+	messages, err := groupOperations.GetUserGroupMessages(groupID, userID, timestamp)
+
+	switch err {
+	case nil:
+		return ctx.JSON(200, messages)
 	default:
 		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
 	}
