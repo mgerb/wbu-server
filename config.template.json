@@ -7,7 +7,6 @@
         "ReadTimeout": 0,
         "WriteTimeout": 0
     },
-    "DatabaseAddress": "",
-    "DatabasePassword": "",
+    "DatabaseName": "",
     "TokenSecret": ""
 }
