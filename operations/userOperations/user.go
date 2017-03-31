@@ -103,6 +103,7 @@ func Login(email string, password string) (*model.User, error) {
 
 	newUser.Jwt = token
 	newUser.LastRefreshTime = lastRefreshTime
+	newUser.FacebookUser = false
 
 	return newUser, nil
 }
@@ -155,6 +156,7 @@ func LoginFacebook(accessToken string) (*model.User, error) {
 
 	newUser.Jwt = token
 	newUser.LastRefreshTime = lastRefreshTime
+	newUser.FacebookUser = true
 
 	return newUser, nil
 }

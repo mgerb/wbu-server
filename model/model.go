@@ -11,6 +11,7 @@ type User struct {
 	Password        string         `json:"-"`
 	FcmToken        sql.NullString `json:"-"`
 	FacebookID      sql.NullString `json:"-"`
+	FacebookUser    bool           `json:"facebookUser"`
 	Jwt             string         `json:"jwt,omitempty"`
 	LastRefreshTime int64          `json:"lastRefreshTime,omitempty"`
 }
