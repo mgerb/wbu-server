@@ -13,10 +13,10 @@ import (
 )
 
 //CreateGroup - create new group in Group table - also add owner to UserGroup table
-func CreateGroup(groupName string, userID string, password string, public bool) error {
+func CreateGroup(name string, userID string, password string, public bool) error {
 
 	// validate group name
-	if !regexp.MustCompile(regex.GROUP_NAME).MatchString(groupName) {
+	if !regexp.MustCompile(regex.GROUP_NAME).MatchString(name) {
 		return errors.New("invalid group name")
 	}
 
@@ -32,7 +32,7 @@ func CreateGroup(groupName string, userID string, password string, public bool) 
 
 	//check if the group already exists
 	var groupExists bool
-	err = tx.QueryRow(`SELECT EXISTS(SELECT 1 FROM "Group" WHERE "name" = ? AND "ownerID" = ?);`, groupName, userID).Scan(&groupExists)
+	err = tx.QueryRow(`SELECT EXISTS(SELECT 1 FROM "Group" WHERE "name" = ? AND "ownerID" = ?);`, name, userID).Scan(&groupExists)
 
 	if err != nil {
 		log.Println(err)
@@ -59,12 +59,12 @@ func CreateGroup(groupName string, userID string, password string, public bool) 
 				return errors.New("Error hashing password")
 			}
 
-			_, err = tx.Exec(`INSERT INTO "Group" (name, ownerID, userCount, public, password) VALUES (?, ?, ?, ?, ?);`, groupName, userID, 1, 1, passwordHash)
+			_, err = tx.Exec(`INSERT INTO "Group" (name, ownerID, userCount, public, password) VALUES (?, ?, ?, ?, ?);`, name, userID, 1, 1, passwordHash)
 		} else {
-			_, err = tx.Exec(`INSERT INTO "Group" (name, ownerID, userCount, public) VALUES (?, ?, ?, ?);`, groupName, userID, 1, 1)
+			_, err = tx.Exec(`INSERT INTO "Group" (name, ownerID, userCount, public) VALUES (?, ?, ?, ?);`, name, userID, 1, 1)
 		}
 	} else { // if private group
-		_, err = tx.Exec(`INSERT INTO "Group" (name, ownerID, userCount) VALUES (?, ?, ?);`, groupName, userID, 1)
+		_, err = tx.Exec(`INSERT INTO "Group" (name, ownerID, userCount) VALUES (?, ?, ?);`, name, userID, 1)
 	}
 
 	if err != nil {
@@ -73,7 +73,7 @@ func CreateGroup(groupName string, userID string, password string, public bool) 
 	}
 
 	// insert id's into UserGroup table
-	_, err = tx.Exec(`INSERT INTO "UserGroup" (groupID, userID) VALUES ((SELECT id FROM "GROUP" WHERE name = ? AND ownerID = ?), ?);`, groupName, userID, userID)
+	_, err = tx.Exec(`INSERT INTO "UserGroup" (groupID, userID) VALUES ((SELECT id FROM "GROUP" WHERE name = ? AND ownerID = ?), ?);`, name, userID, userID)
 
 	if err != nil {
 		log.Println(err)
@@ -86,7 +86,7 @@ func CreateGroup(groupName string, userID string, password string, public bool) 
 }
 
 // SearchPublicGroups - matches group by group name
-func SearchPublicGroups(groupName string) ([]*model.Group, error) {
+func SearchPublicGroups(name string) ([]*model.Group, error) {
 	groupList := []*model.Group{}
 
 	// query groups - join with UserGroup and User tables to get the group owner information
@@ -94,7 +94,7 @@ func SearchPublicGroups(groupName string) ([]*model.Group, error) {
 		SELECT g.id, g.name, u.email, g.userCount, g.password, u.firstName, u.lastName
 		FROM "Group" AS g INNER JOIN "USER" AS u ON g.ownerID = u.id
 		WHERE g.public = 1 AND g.name LIKE ?;`,
-		"%"+groupName+"%")
+		"%"+name+"%")
 
 	if err != nil {
 		log.Println(err)

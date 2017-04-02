@@ -9,11 +9,11 @@ import (
 //CreateGroup - create a new group with groupName and user id as the owner
 func CreateGroup(ctx echo.Context) error {
 	userID := ctx.Get("userID").(string)
-	groupName := ctx.FormValue("groupName")
+	name := ctx.FormValue("name")
 	password := ctx.FormValue("password")
 	public := ctx.FormValue("public") != ""
 
-	err := groupOperations.CreateGroup(groupName, userID, password, public)
+	err := groupOperations.CreateGroup(name, userID, password, public)
 
 	switch err {
 	case nil:
@@ -41,9 +41,9 @@ func JoinPublicGroup(ctx echo.Context) error {
 
 // SearchPublicGroups -
 func SearchPublicGroups(ctx echo.Context) error {
-	groupName := ctx.FormValue("groupName")
+	name := ctx.FormValue("name")
 
-	groups, err := groupOperations.SearchPublicGroups(groupName)
+	groups, err := groupOperations.SearchPublicGroups(name)
 
 	switch err {
 	case nil:
