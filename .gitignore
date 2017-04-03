@@ -2,6 +2,8 @@ npm-debug*
 config.json
 tls.key
 tls.crt
+key.pem
+cert.pem
 main
 .vscode/
 database.db*

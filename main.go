@@ -6,7 +6,6 @@ import (
 	"./routes"
 
 	"github.com/labstack/echo"
-	"github.com/labstack/echo/engine/fasthttp"
 )
 
 func main() {
@@ -20,5 +19,9 @@ func main() {
 	app := echo.New()
 	routes.RegisterRoutes(app)
 
-	app.Run(fasthttp.WithConfig(config.Config.ServerConfig))
+	if config.Flags.Production {
+		app.Logger.Fatal(app.StartTLS(config.Config.Address, config.Config.CertFile, config.Config.KeyFile))
+	} else {
+		app.Logger.Fatal(app.Start(config.Config.Address))
+	}
 }

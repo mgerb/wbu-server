@@ -1,12 +1,7 @@
 {
-    "ServerConfig": {
-        "Address": "",
-        "TLSCertFile": "",
-        "TLSKeyFile": "",
-        "DisableHTTP2": true,
-        "ReadTimeout": 0,
-        "WriteTimeout": 0
-    },
+    "Address": "",
+    "CertFile": "cert.pem",
+    "KeyFile": "key.pem",
     "DatabaseName": "",
     "TokenSecret": ""
 }

@@ -8,4 +8,4 @@ deploy:
 	go build ./main.go && ./main -p
 
 generate-tls:
-	sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout ./tls.key -out ./tls.crt
+	sudo openssl req -x509 -nodes -days 365 -newkey rsa:4096 -keyout ./key.pem -out ./cert.pem

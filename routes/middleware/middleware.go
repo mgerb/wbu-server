@@ -24,14 +24,14 @@ func checkJWT(next echo.HandlerFunc) echo.HandlerFunc {
 
 	//return handler function
 	return func(ctx echo.Context) error {
-		path := ctx.Request().URL().Path()
+		path := ctx.Request().URL.Path
 
 		if bypassRoutes(path) {
 			return next(ctx)
 		}
 
 		//get Authorization header - jwt token
-		authToken := ctx.Request().Header().Get("Authorization")
+		authToken := ctx.Request().Header.Get("Authorization")
 
 		//parse the token
 		//TODO - FIX ERROR HANDLING HERE

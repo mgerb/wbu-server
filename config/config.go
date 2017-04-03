@@ -7,21 +7,23 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-
-	"github.com/labstack/echo/engine"
 )
 
-var Config configStruct
-var Flags configFlags
+var (
+	Config configStruct
+	Flags  configFlags
+)
 
 type configFlags struct {
 	Production bool
 }
 
 type configStruct struct {
-	ServerConfig engine.Config `json:"ServerConfig"`
-	TokenSecret  string        `json:"TokenSecret"`
-	DatabaseName string        `json:"DatabaseName"`
+	Address      string `json:"Address"`
+	TokenSecret  string `json:"TokenSecret"`
+	DatabaseName string `json:"DatabaseName"`
+	CertFile     string `json:"CertFile"`
+	KeyFile      string `json:"KeyFile"`
 }
 
 func Init() {
