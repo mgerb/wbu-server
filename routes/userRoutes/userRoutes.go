@@ -108,7 +108,9 @@ func LoginFacebook(ctx echo.Context) error {
 // SearchUserByName -
 func SearchUserByName(ctx echo.Context) error {
 	name := ctx.Param("name")
-	userList, err := userOperations.SearchUserByName(name)
+	userID := ctx.Get("userID").(string)
+
+	userList, err := userOperations.SearchUserByName(name, userID)
 
 	switch err {
 	case nil:

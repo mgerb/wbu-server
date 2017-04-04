@@ -178,12 +178,12 @@ func createFacebookUser(fbResponse map[string]interface{}) error {
 }
 
 // SearchUserByName - return list of users that match name
-func SearchUserByName(name string) ([]*model.User, error) {
+func SearchUserByName(name string, userID string) ([]*model.User, error) {
 
 	userList := []*model.User{}
 
 	// get user information
-	rows, err := db.SQL.Query(`SELECT id, email, firstName, lastName FROM "User" WHERE "firstName" || ' ' || "lastName" LIKE ?;`, "%"+name+"%")
+	rows, err := db.SQL.Query(`SELECT id, email, firstName, lastName FROM "User" WHERE "firstName" || ' ' || "lastName" LIKE ? AND "id" != ?;`, "%"+name+"%", userID)
 
 	if err != nil {
 		log.Println(err)
