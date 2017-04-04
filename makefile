@@ -1,6 +1,9 @@
 c9:
 	reflex -e -c reflex.conf
 
+mac-build:
+	go build -ldflags -s
+
 dev:
 	reflex -s go run main.go
 
