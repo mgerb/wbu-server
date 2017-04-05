@@ -183,7 +183,7 @@ func SearchUserByName(name string, userID string) ([]*model.User, error) {
 	userList := []*model.User{}
 
 	// get user information
-	rows, err := db.SQL.Query(`SELECT id, email, firstName, lastName FROM "User" WHERE "firstName" || ' ' || "lastName" LIKE ? AND "id" != ?;`, "%"+name+"%", userID)
+	rows, err := db.SQL.Query(`SELECT id, email, firstName, lastName FROM "User" WHERE "firstName" || ' ' || "lastName" LIKE ? AND "id" != ? LIMIT 20;`, "%"+name+"%", userID)
 
 	if err != nil {
 		log.Println(err)
