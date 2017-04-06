@@ -11,7 +11,7 @@ func CreateGroup(ctx echo.Context) error {
 	userID := ctx.Get("userID").(string)
 	name := ctx.FormValue("name")
 	password := ctx.FormValue("password")
-	public := ctx.FormValue("public") != ""
+	public := ctx.FormValue("public") == "true"
 
 	err := groupOperations.CreateGroup(name, userID, password, public)
 
