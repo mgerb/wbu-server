@@ -46,7 +46,7 @@ func StoreUserGroupMessages(groupID string, userID string, message string) error
 	}
 
 	// send out notifications via FCM
-	fcmNotifications(groupID)
+	fcmNotifications(groupID, userID)
 
 	return nil
 }
@@ -111,11 +111,11 @@ func GetUserGroupMessages(groupID string, userID string, unixTime string) ([]*mo
 	return messageList, nil
 }
 
-// fcmNotifications - get all fcm tokens and send notifications to FCM
-func fcmNotifications(groupID string) {
+// fcmNotifications - get all fcm tokens and send notifications to FCM exclude userID from notifications
+func fcmNotifications(groupID string, userID string) {
 
 	rows, err := db.SQL.Query(`SELECT u.fcmToken from "UserGroup" AS ug INNER JOIN
-								"User" AS u ON ug.userID = u.id WHERE ug.groupID = ?;`, groupID)
+								"User" AS u ON ug.userID = u.id WHERE ug.groupID = ? AND ug.userID != ? AND u.fcmToken != NULL;`, groupID, userID)
 
 	if err != nil {
 		log.Println(err)
