@@ -76,7 +76,7 @@ func GetUserGroupMessages(groupID string, userID string, unixTime string) ([]*mo
 	}
 
 	// need to convert time input to local time because sqlite compares time strings and not unix time
-	rows, err := tx.Query(`SELECT m.id, m.content, u.firstName, u.lastName, strftime('%s', m.timestamp) FROM "Message" AS m INNER JOIN
+	rows, err := tx.Query(`SELECT m.id, m.content, m.userID, u.firstName, u.lastName, strftime('%s', m.timestamp) FROM "Message" AS m INNER JOIN
 	   						"User" AS u ON u.id = m.userID
 	   						WHERE m.groupID = ? AND datetime(m.timestamp, 'localtime') >= datetime(?, 'unixepoch', 'localtime');`, groupID, unixTime) //timestamp.Format("2006-01-02 15:04:05"))
 
@@ -91,7 +91,7 @@ func GetUserGroupMessages(groupID string, userID string, unixTime string) ([]*mo
 
 	for rows.Next() {
 		newMessage := &model.Message{}
-		err := rows.Scan(&newMessage.ID, &newMessage.Content, &newMessage.FirstName, &newMessage.LastName, &newMessage.Timestamp)
+		err := rows.Scan(&newMessage.ID, &newMessage.Content, &newMessage.UserID, &newMessage.FirstName, &newMessage.LastName, &newMessage.Timestamp)
 
 		if err != nil {
 			log.Println(err)
