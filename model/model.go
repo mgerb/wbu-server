@@ -4,7 +4,7 @@ import "database/sql"
 
 // User - user model
 type User struct {
-	ID              string         `json:"id,omitempty"`
+	ID              int64          `json:"id,omitempty"`
 	Email           string         `json:"email,omitempty"`
 	FirstName       string         `json:"firstName,omitempty"`
 	LastName        string         `json:"lastName,omitempty"`
@@ -18,9 +18,9 @@ type User struct {
 
 // Group - group model
 type Group struct {
-	ID         string         `json:"id,omitempty"`
+	ID         int64          `json:"id,omitempty"`
 	Name       string         `json:"name,omitempty"`
-	OwnerID    string         `json:"ownerID,omitempty"`
+	OwnerID    int64          `json:"ownerID,omitempty"`
 	OwnerEmail string         `json:"ownerEmail,omitempty"`
 	OwnerName  string         `json:"ownerName,omitempty"`
 	UserCount  int            `json:"userCount,omitempty"`
@@ -31,20 +31,20 @@ type Group struct {
 
 // Message - message model
 type Message struct {
-	ID        string `json:"id,omitempty"`
-	UserID    string `json:"userID,omitempty"`
-	GroupID   string `json:"groupID"`
+	ID        int64  `json:"id,omitempty"`
+	UserID    int64  `json:"userID,omitempty"`
+	GroupID   int64  `json:"groupID,omitempty"`
 	FirstName string `json:"firstName,omitempty"`
 	LastName  string `json:"lastName,omitempty"`
 	Content   string `json:"content,omitempty"`
-	Timestamp string `json:"timestamp,omitempty"`
+	Timestamp int64  `json:"timestamp,omitempty"`
 }
 
 // GeoLocation - geo location model
 type GeoLocation struct {
-	ID        string `json:"id,omitempty"`
-	UserID    string `json:"userID,omitempty"`
-	GroupID   string `json:"groupID"`
+	ID        int64  `json:"id,omitempty"`
+	UserID    int64  `json:"userID,omitempty"`
+	GroupID   int64  `json:"groupID"`
 	FirstName string `json:"firstName,omitempty"`
 	LastName  string `json:"lastName,omitempty"`
 	Email     string `json:"email,omitempty"`

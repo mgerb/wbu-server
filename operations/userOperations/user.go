@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 	"regexp"
+	"strconv"
 
 	"database/sql"
 
@@ -94,7 +95,7 @@ func Login(email string, password string) (*model.User, error) {
 		return &model.User{}, errors.New("invalid password")
 	}
 
-	token, lastRefreshTime, errToken := tokens.GetJWT(newUser.Email, newUser.ID, newUser.FirstName, newUser.LastName)
+	token, lastRefreshTime, errToken := tokens.GetJWT(newUser.Email, strconv.FormatInt(newUser.ID, 10), newUser.FirstName, newUser.LastName)
 
 	if errToken != nil {
 		log.Println(err)
@@ -147,7 +148,7 @@ func LoginFacebook(accessToken string) (*model.User, error) {
 		return &model.User{}, errors.New("database error")
 	}
 
-	token, lastRefreshTime, errToken := tokens.GetJWT(newUser.Email, newUser.ID, newUser.FirstName, newUser.LastName)
+	token, lastRefreshTime, errToken := tokens.GetJWT(newUser.Email, strconv.FormatInt(newUser.ID, 10), newUser.FirstName, newUser.LastName)
 
 	if errToken != nil {
 		log.Println(err)
