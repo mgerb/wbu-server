@@ -142,13 +142,13 @@ func LeaveGroup(ctx echo.Context) error {
 	}
 }
 
-// KickUserFromGroup -
-func KickUserFromGroup(ctx echo.Context) error {
+// RemoveUserFromGroup -
+func RemoveUserFromGroup(ctx echo.Context) error {
 	ownerID := ctx.Get("userID").(string)
 	userID := ctx.FormValue("userID")
 	groupID := ctx.FormValue("groupID")
 
-	err := groupOperations.KickUserFromGroup(ownerID, userID, groupID)
+	err := groupOperations.RemoveUserFromGroup(ownerID, userID, groupID)
 
 	switch err {
 	case nil:

@@ -498,8 +498,8 @@ func LeaveGroup(userID string, groupID string) error {
 	return nil
 }
 
-// KickUserFromGroup -
-func KickUserFromGroup(ownerID string, userID string, groupID string) error {
+// RemoveUserFromGroup -
+func RemoveUserFromGroup(ownerID string, userID string, groupID string) error {
 
 	if ownerID == userID {
 		return errors.New("invalid user")
