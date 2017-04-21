@@ -73,6 +73,7 @@ func checkJWT(next echo.HandlerFunc) echo.HandlerFunc {
 var prodRoutes = map[string]bool{
 	"/user/loginFacebook": true,
 	"/user/login":         true,
+	"/user/createUser":    true,
 }
 
 var devRoutes = map[string]bool{

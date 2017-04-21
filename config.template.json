@@ -1,7 +1,5 @@
 {
     "Address": "",
-    "CertFile": "cert.pem",
-    "KeyFile": "key.pem",
     "DatabaseName": "",
     "TokenSecret": ""
 }

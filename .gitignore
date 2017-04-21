@@ -8,3 +8,6 @@ main
 .vscode/
 database.db*
 debug
+.cache
+wbu-server
+

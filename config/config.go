@@ -22,8 +22,6 @@ type configStruct struct {
 	Address      string `json:"Address"`
 	TokenSecret  string `json:"TokenSecret"`
 	DatabaseName string `json:"DatabaseName"`
-	CertFile     string `json:"CertFile"`
-	KeyFile      string `json:"KeyFile"`
 }
 
 func Init() {
