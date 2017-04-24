@@ -54,16 +54,16 @@ func checkJWT(next echo.HandlerFunc) echo.HandlerFunc {
 					ctx.Set("firstName", firstName.(string))
 					ctx.Set("lastName", lastName.(string))
 				} else {
-					return ctx.JSON(500, response.Json("Token claims error.", response.INVALID_AUTHENTICATION))
+					return ctx.JSON(401, response.Json("Token claims error.", response.INVALID_AUTHENTICATION))
 				}
 
 				return next(ctx)
 			}
-			return ctx.JSON(500, response.Json("Invalid authentication.", response.INVALID_AUTHENTICATION))
+			return ctx.JSON(401, response.Json("Invalid authentication.", response.INVALID_AUTHENTICATION))
 
 		default:
 			log.Println(err.Error())
-			return ctx.JSON(500, response.Json("Invalid token.", response.INVALID_AUTHENTICATION))
+			return ctx.JSON(401, response.Json("Invalid token.", response.INVALID_AUTHENTICATION))
 
 		}
 	}
