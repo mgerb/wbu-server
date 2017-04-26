@@ -7,6 +7,7 @@ import (
 
 	"golang.org/x/crypto/acme/autocert"
 	"github.com/labstack/echo"
+	"time"
 )
 
 func main() {
@@ -18,6 +19,9 @@ func main() {
 	defer db.SQL.Close()
 
 	app := echo.New()
+	app.Server.WriteTimeout = time.Second * 10
+	app.Server.ReadTimeout = time.Second * 10
+
 	routes.RegisterRoutes(app)
 
 	if config.Flags.Production {

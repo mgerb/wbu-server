@@ -11,6 +11,12 @@ import (
 //StoreUserGroupMessages - store a users messages in a group
 func StoreUserGroupMessages(groupID string, userID string, message string) error {
 
+	//do validation before running redis script
+	//check message length - must be less than 150 characters
+	if len(message) > 150 || len(message) == 0 {
+		return errors.New("invalid message")
+	}
+
 	// start SQL transaction
 	tx, err := db.SQL.Begin()
 	if err != nil {
@@ -19,12 +25,6 @@ func StoreUserGroupMessages(groupID string, userID string, message string) error
 	}
 
 	defer tx.Commit()
-
-	//do validation before running redis script
-	//check message length - must be less than 150 characters
-	if len(message) > 150 || len(message) == 0 {
-		return errors.New("invalid message")
-	}
 
 	// check if user exists in group before sending messages
 	// check ID's in UserGroup table
