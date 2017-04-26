@@ -288,6 +288,14 @@ func JoinPublicGroup(userID string, groupID string, password string) error {
 		return errors.New("database error")
 	}
 
+	// if a user already has a group invite to this group delete it
+	_, err = tx.Exec(`DELETE FROM "GroupInvite" WHERE userID = ? AND groupID = ?;`, userID, groupID)
+
+	if err != nil {
+		log.Println(err)
+		return errors.New("database error")
+	}
+
 	// update userCount in Group table
 	_, err = tx.Exec(`UPDATE "Group" SET userCount = userCount + 1 WHERE id = ?;`, groupID)
 
