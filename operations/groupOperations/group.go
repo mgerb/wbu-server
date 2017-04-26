@@ -453,6 +453,20 @@ func JoinGroupFromInvite(userID string, groupID string) error {
 	return nil
 }
 
+// DeleteGroupInvite -
+func DeleteGroupInvite(userID string, groupID string) error {
+
+	// delete the invite from GroupInvite
+	_, err := db.SQL.Exec(`DELETE FROM "GroupInvite" WHERE userID = ? AND groupID = ?;`, userID, groupID)
+
+	if err != nil {
+		log.Println(err)
+		return errors.New("database error")
+	}
+
+	return nil
+}
+
 // LeaveGroup -
 func LeaveGroup(userID string, groupID string) error {
 

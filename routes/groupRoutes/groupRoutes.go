@@ -127,6 +127,21 @@ func JoinGroupFromInvite(ctx echo.Context) error {
 	}
 }
 
+// DeleteGroupInvite -
+func DeleteGroupInvite(ctx echo.Context) error {
+	userID := ctx.Get("userID").(string)
+	groupID := ctx.FormValue("groupID")
+
+	err := groupOperations.DeleteGroupInvite(userID, groupID)
+
+	switch err {
+	case nil:
+		return ctx.JSON(200, response.Json("Group deleted.", response.SUCCESS))
+	default:
+		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
+	}
+}
+
 // LeaveGroup -
 func LeaveGroup(ctx echo.Context) error {
 	userID := ctx.Get("userID").(string)
