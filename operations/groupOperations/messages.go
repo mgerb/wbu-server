@@ -45,8 +45,13 @@ func StoreUserGroupMessages(groupID string, userID string, message string) error
 		return errors.New("database error")
 	}
 
+	// must commit before starting new db transaction
+	tx.Commit()
+
 	// send out notifications via FCM
-	fcmNotifications(groupID, userID)
+	// running this in new go routine because it starts a new db transaction
+	// this is handled above by the commit but we are doing this just to be safe
+	go fcmNotifications(groupID, userID)
 
 	return nil
 }

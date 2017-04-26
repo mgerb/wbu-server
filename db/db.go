@@ -15,10 +15,12 @@ var SQL *sql.DB
 func Start(databaseName string) {
 	var err error
 	// start sqlite database
-	SQL, err = sql.Open("sqlite3", databaseName)
+	SQL, err = sql.Open("sqlite3", databaseName+"?cache=shared&mode=rwc")
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	SQL.SetMaxOpenConns(1)
 
 	InitializeDatabase()
 }
@@ -29,6 +31,9 @@ func InitializeDatabase() {
 	fmt.Println("sqlite startup scripts...")
 
 	sqlStatement := `
+		
+		PRAGMA journal_mode=WAL;
+		
 		create table if not exists "User" (
 			id integer not null primary key autoincrement,
 			email text unique not null,
