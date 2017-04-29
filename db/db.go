@@ -2,17 +2,21 @@ package db
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 
+	redis "github.com/go-redis/redis"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/mgerb/wbu-server/db/lua"
 )
 
 // SQL - sqlite database connection
 var SQL *sql.DB
 
-// Connect - start database
-func Start(databaseName string) {
+// RClient - exported redis client connection
+var RClient *redis.Client
+
+// StartSQL - start database
+func StartSQL(databaseName string) {
 	var err error
 	// start sqlite database
 	SQL, err = sql.Open("sqlite3", databaseName+"?cache=shared&mode=rwc")
@@ -23,12 +27,36 @@ func Start(databaseName string) {
 	SQL.SetMaxOpenConns(1)
 
 	InitializeDatabase()
+
+}
+
+// StartRedis -
+func StartRedis(address string, password string) {
+	// start redis connection
+	redisOptions := &redis.Options{
+		Addr:     address,
+		Password: password,
+		DB:       0,
+	}
+
+	RClient = redis.NewClient(redisOptions)
+
+	test := RClient.Ping()
+
+	if test.Val() == "PONG" {
+		log.Println("Redis connected...")
+	} else {
+		log.Println("Redis connection failed...")
+	}
+
+	// Load lua scripts into memory
+	lua.Init()
 }
 
 // InitializeDatabase - initial database scripts
 func InitializeDatabase() {
 
-	fmt.Println("sqlite startup scripts...")
+	log.Println("sqlite startup scripts...")
 
 	sqlStatement := `
 		

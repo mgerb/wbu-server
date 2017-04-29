@@ -2,16 +2,21 @@ package middleware
 
 import (
 	"log"
+	"net"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/go-redis/redis"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 	"github.com/mgerb/wbu-server/config"
+	"github.com/mgerb/wbu-server/db"
+	"github.com/mgerb/wbu-server/db/lua"
 	"github.com/mgerb/wbu-server/utils/response"
 )
 
 //ApplyMiddleware -
 func ApplyMiddleware(app *echo.Echo) {
+	app.Use(rateLimit)
 	app.Use(checkJWT)
 
 	if !config.Flags.Production {
@@ -92,4 +97,30 @@ func bypassRoutes(path string) bool {
 	}
 
 	return devRoutes[path]
+}
+
+// rate limit middleware
+func rateLimit(next echo.HandlerFunc) echo.HandlerFunc {
+
+	//return handler function
+	return func(ctx echo.Context) error {
+
+		// use lua script
+		script := redis.NewScript(lua.Use("RateLimit.lua"))
+
+		// get ip address from ip:port
+		ip, _, err := net.SplitHostPort(ctx.Request().RemoteAddr)
+
+		if err != nil {
+			return ctx.JSON(500, response.Json("Request error.", response.INTERNAL_ERROR))
+		}
+
+		_, err = script.Run(db.RClient, []string{"limit:" + ip}).Result()
+
+		if err != nil {
+			return ctx.JSON(429, response.Json(err.Error(), response.INTERNAL_ERROR))
+		}
+
+		return next(ctx)
+	}
 }

@@ -1,5 +1,6 @@
 {
-    "Address": "",
-    "DatabaseName": "",
-    "TokenSecret": ""
+    "Address": "0.0.0.0:8080",
+    "DatabaseName": "database.db",
+    "RedisAddress": "localhost:6379",
+    "TokenSecret": "secret"
 }

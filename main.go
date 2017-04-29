@@ -16,7 +16,8 @@ func main() {
 	//read config files/flags
 	config.Init()
 
-	db.Start(config.Config.DatabaseName)
+	db.StartSQL(config.Config.DatabaseName)
+	db.StartRedis(config.Config.RedisAddress, "")
 	defer db.SQL.Close()
 
 	app := echo.New()

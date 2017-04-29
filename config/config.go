@@ -20,6 +20,7 @@ type configFlags struct {
 
 type configStruct struct {
 	Address      string `json:"Address"`
+	RedisAddress string `json:"RedisAddress"`
 	TokenSecret  string `json:"TokenSecret"`
 	DatabaseName string `json:"DatabaseName"`
 }
