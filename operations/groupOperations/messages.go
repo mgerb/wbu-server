@@ -4,8 +4,8 @@ import (
 	"errors"
 	"log"
 
-	"../../db"
-	"../../model"
+	"github.com/mgerb/wbu-server/db"
+	"github.com/mgerb/wbu-server/model"
 )
 
 //StoreUserGroupMessages - store a users messages in a group

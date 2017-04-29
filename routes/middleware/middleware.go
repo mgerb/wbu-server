@@ -3,11 +3,11 @@ package middleware
 import (
 	"log"
 
-	"../../config"
-	"../../utils/response"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
+	"github.com/mgerb/wbu-server/config"
+	"github.com/mgerb/wbu-server/utils/response"
 )
 
 //ApplyMiddleware -

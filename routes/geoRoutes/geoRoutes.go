@@ -1,9 +1,9 @@
 package geoRoutes
 
 import (
-	"../../operations/geoOperations"
-	"../../utils/response"
 	"github.com/labstack/echo"
+	"github.com/mgerb/wbu-server/operations/geoOperations"
+	"github.com/mgerb/wbu-server/utils/response"
 )
 
 // StoreGeoLocation -

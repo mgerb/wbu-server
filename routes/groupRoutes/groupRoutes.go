@@ -1,9 +1,9 @@
 package groupRoutes
 
 import (
-	"../../operations/groupOperations"
-	"../../utils/response"
 	"github.com/labstack/echo"
+	"github.com/mgerb/wbu-server/operations/groupOperations"
+	"github.com/mgerb/wbu-server/utils/response"
 )
 
 //CreateGroup - create a new group with groupName and user id as the owner

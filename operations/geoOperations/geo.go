@@ -5,8 +5,8 @@ import (
 	"log"
 	"strconv"
 
-	"../../db"
-	"../../model"
+	"github.com/mgerb/wbu-server/db"
+	"github.com/mgerb/wbu-server/model"
 )
 
 // StoreGeoLocation -

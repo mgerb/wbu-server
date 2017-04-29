@@ -5,10 +5,10 @@ import (
 	"log"
 	"regexp"
 
-	"../../db"
-	"../../model"
-	"../../utils"
-	"../../utils/regex"
+	"github.com/mgerb/wbu-server/db"
+	"github.com/mgerb/wbu-server/model"
+	"github.com/mgerb/wbu-server/utils"
+	"github.com/mgerb/wbu-server/utils/regex"
 	"golang.org/x/crypto/bcrypt"
 )
 

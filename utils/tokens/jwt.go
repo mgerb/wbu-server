@@ -4,8 +4,8 @@ import (
 	"errors"
 	"time"
 
-	"../../config"
 	"github.com/dgrijalva/jwt-go"
+	"github.com/mgerb/wbu-server/config"
 )
 
 const (

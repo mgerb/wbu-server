@@ -1,13 +1,14 @@
 package main
 
 import (
-	"./config"
-	"./db"
-	"./routes"
+	"github.com/mgerb/wbu-server/config"
+	"github.com/mgerb/wbu-server/db"
+	"github.com/mgerb/wbu-server/routes"
 
-	"golang.org/x/crypto/acme/autocert"
-	"github.com/labstack/echo"
 	"time"
+
+	"github.com/labstack/echo"
+	"golang.org/x/crypto/acme/autocert"
 )
 
 func main() {

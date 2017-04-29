@@ -8,12 +8,12 @@ import (
 
 	"database/sql"
 
-	"../../db"
-	"../../model"
-	"../../utils"
-	"../../utils/regex"
-	"../../utils/tokens"
-	"../fb"
+	"github.com/mgerb/wbu-server/db"
+	"github.com/mgerb/wbu-server/model"
+	"github.com/mgerb/wbu-server/operations/fb"
+	"github.com/mgerb/wbu-server/utils"
+	"github.com/mgerb/wbu-server/utils/regex"
+	"github.com/mgerb/wbu-server/utils/tokens"
 	"golang.org/x/crypto/bcrypt"
 )
 

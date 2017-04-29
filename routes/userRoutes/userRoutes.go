@@ -1,10 +1,10 @@
 package userRoutes
 
 import (
-	"../../operations/userOperations"
-	"../../utils/response"
-	"../../utils/tokens"
 	"github.com/labstack/echo"
+	"github.com/mgerb/wbu-server/operations/userOperations"
+	"github.com/mgerb/wbu-server/utils/response"
+	"github.com/mgerb/wbu-server/utils/tokens"
 )
 
 //HandleTest - test function for random things

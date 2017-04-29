@@ -1,10 +1,10 @@
 package routes
 
 import (
-	"./geoRoutes"
-	"./groupRoutes"
-	"./middleware"
-	"./userRoutes"
+	"github.com/mgerb/wbu-server/routes/geoRoutes"
+	"github.com/mgerb/wbu-server/routes/groupRoutes"
+	"github.com/mgerb/wbu-server/routes/middleware"
+	"github.com/mgerb/wbu-server/routes/userRoutes"
 
 	"github.com/labstack/echo"
 )
