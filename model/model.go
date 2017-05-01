@@ -2,6 +2,13 @@ package model
 
 import "database/sql"
 
+// redis keys
+const (
+	RateLimitKey = "rl:"
+	UserGroupKey = "ug:"
+	FCMTokenKey  = "fcmTokens"
+)
+
 // User - user model
 type User struct {
 	ID              int64          `json:"id,omitempty"`

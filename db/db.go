@@ -68,15 +68,14 @@ func InitializeDatabase() {
 			password text default null,
 			firstName text not null,
 			lastName text not null,
-			facebookID text unique default null,
-			fcmToken text default null
+			facebookID text unique default null
 		);
                
 		create table if not exists "Group" (
 			id integer not null primary key autoincrement,
 			name text not null,
 			ownerID integer not null,
-			userCount integer not null,
+			userCount integer not null default 0,
 			password text default null,
 			public integer not null default 0,
             

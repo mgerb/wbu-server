@@ -4,6 +4,8 @@ import (
 	"errors"
 	"log"
 
+	fcm "github.com/NaySoftware/go-fcm"
+	"github.com/mgerb/wbu-server/config"
 	"github.com/mgerb/wbu-server/db"
 	"github.com/mgerb/wbu-server/model"
 )
@@ -48,10 +50,8 @@ func StoreUserGroupMessages(groupID string, userID string, message string) error
 	// must commit before starting new db transaction
 	tx.Commit()
 
-	// send out notifications via FCM
-	// running this in new go routine because it starts a new db transaction
-	// this is handled above by the commit but we are doing this just to be safe
-	go fcmNotifications(groupID, userID)
+	// send out notifications via FCM - new go routine
+	go fcmNotifications(groupID, userID, message)
 
 	return nil
 }
@@ -116,38 +116,51 @@ func GetUserGroupMessages(groupID string, userID string, unixTime string) ([]*mo
 	return messageList, nil
 }
 
-// fcmNotifications - get all fcm tokens and send notifications to FCM exclude userID from notifications
-func fcmNotifications(groupID string, userID string) {
+// TODO rethink this - need to get group name along with users name
+// fcmNotifications - get all fcm tokens and send notifications to FCM
+func fcmNotifications(groupID string, userID string, message string) {
 
-	rows, err := db.SQL.Query(`SELECT u.fcmToken from "UserGroup" AS ug INNER JOIN
-								"User" AS u ON ug.userID = u.id WHERE ug.groupID = ? AND ug.userID != ? AND u.fcmToken != NULL;`, groupID, userID)
-
-	if err != nil {
-		log.Println(err)
-	}
-
-	defer rows.Close()
-
-	tokenList := []string{}
-
-	for rows.Next() {
-		var token string
-		err := rows.Scan(&token)
-
-		if err != nil {
-			log.Println(err)
-		}
-
-		tokenList = append(tokenList, token)
-	}
-
-	err = rows.Err()
+	userList, err := db.RClient.SMembers(model.UserGroupKey + groupID).Result()
 
 	if err != nil {
 		log.Println(err)
+		return
 	}
 
-	// TODO - add FCM functionality
-	log.Println("FCM Token List")
-	log.Println(tokenList)
+	tokenList, err := db.RClient.HMGet(model.FCMTokenKey, userList...).Result()
+
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	var tokenStringList []string
+	for _, token := range tokenList {
+		tokenStringList = append(tokenStringList, token.(string))
+	}
+
+	data := map[string]interface{}{
+		"msg": "Test 123",
+	}
+
+	client := fcm.NewFcmClient(config.Config.FCMServerKey)
+
+	notifPayload := &fcm.NotificationPayload{
+		Title: "Group Name",
+		Body:  message,
+		Sound: "Enabled",
+	}
+
+	client.SetNotificationPayload(notifPayload)
+
+	client.NewFcmRegIdsMsg(tokenStringList, data)
+
+	status, err := client.Send()
+
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	status.PrintResults()
 }

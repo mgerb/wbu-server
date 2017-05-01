@@ -222,7 +222,7 @@ func UpdateFCMToken(userID string, token string) error {
 		return errors.New("invalid token")
 	}
 
-	_, err := db.SQL.Exec(`UPDATE "User" SET fcmToken = ? WHERE id = ?;`, token, userID)
+	err := db.RClient.HSet(model.FCMTokenKey, userID, token).Err()
 
 	if err != nil {
 		log.Println(err)

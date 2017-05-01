@@ -11,6 +11,7 @@ import (
 	"github.com/mgerb/wbu-server/config"
 	"github.com/mgerb/wbu-server/db"
 	"github.com/mgerb/wbu-server/db/lua"
+	"github.com/mgerb/wbu-server/model"
 	"github.com/mgerb/wbu-server/utils/response"
 )
 
@@ -115,7 +116,7 @@ func rateLimit(next echo.HandlerFunc) echo.HandlerFunc {
 			return ctx.JSON(500, response.Json("Request error.", response.INTERNAL_ERROR))
 		}
 
-		_, err = script.Run(db.RClient, []string{"limit:" + ip}).Result()
+		_, err = script.Run(db.RClient, []string{model.RateLimitKey + ip}).Result()
 
 		if err != nil {
 			return ctx.JSON(429, response.Json(err.Error(), response.INTERNAL_ERROR))

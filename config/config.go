@@ -23,6 +23,7 @@ type configStruct struct {
 	RedisAddress string `json:"RedisAddress"`
 	TokenSecret  string `json:"TokenSecret"`
 	DatabaseName string `json:"DatabaseName"`
+	FCMServerKey string `json:"FCMServerKey"`
 }
 
 func Init() {

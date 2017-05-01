@@ -1,6 +1,7 @@
 package groupOperations
 
 import (
+	"database/sql"
 	"errors"
 	"log"
 	"regexp"
@@ -59,12 +60,12 @@ func CreateGroup(name string, userID string, password string, public bool) error
 				return errors.New("Error hashing password")
 			}
 
-			_, err = tx.Exec(`INSERT INTO "Group" (name, ownerID, userCount, public, password) VALUES (?, ?, ?, ?, ?);`, name, userID, 1, 1, passwordHash)
+			_, err = tx.Exec(`INSERT INTO "Group" (name, ownerID, public, password) VALUES (?, ?, ?, ?);`, name, userID, 1, passwordHash)
 		} else {
-			_, err = tx.Exec(`INSERT INTO "Group" (name, ownerID, userCount, public) VALUES (?, ?, ?, ?);`, name, userID, 1, 1)
+			_, err = tx.Exec(`INSERT INTO "Group" (name, ownerID, public) VALUES (?, ?, ?);`, name, userID, 1)
 		}
 	} else { // if private group
-		_, err = tx.Exec(`INSERT INTO "Group" (name, ownerID, userCount) VALUES (?, ?, ?);`, name, userID, 1)
+		_, err = tx.Exec(`INSERT INTO "Group" (name, ownerID) VALUES (?, ?);`, name, userID)
 	}
 
 	if err != nil {
@@ -72,8 +73,16 @@ func CreateGroup(name string, userID string, password string, public bool) error
 		return errors.New("database error")
 	}
 
+	var groupID string
+	err = tx.QueryRow(`SELECT id FROM "GROUP" WHERE name = ? AND ownerID = ?;`, name, userID).Scan(&groupID)
+
+	if err != nil {
+		log.Println(err)
+		return errors.New("database error")
+	}
+
 	// insert id's into UserGroup table
-	_, err = tx.Exec(`INSERT INTO "UserGroup" (groupID, userID) VALUES ((SELECT id FROM "GROUP" WHERE name = ? AND ownerID = ?), ?);`, name, userID, userID)
+	err = insertUserGroup(tx, userID, groupID)
 
 	if err != nil {
 		log.Println(err)
@@ -280,24 +289,16 @@ func JoinPublicGroup(userID string, groupID string, password string) error {
 	}
 
 	// insert id's into UserGroup table
-	_, err = tx.Exec(`INSERT INTO "UserGroup" (userID, groupID) SELECT ?, ?
-					WHERE NOT EXISTS(SELECT 1 FROM "UserGroup" WHERE userID = ? AND groupID = ?);`, userID, groupID, userID, groupID)
+	err = insertUserGroup(tx, userID, groupID)
 
 	if err != nil {
 		log.Println(err)
+		tx.Rollback()
 		return errors.New("database error")
 	}
 
 	// if a user already has a group invite to this group delete it
 	_, err = tx.Exec(`DELETE FROM "GroupInvite" WHERE userID = ? AND groupID = ?;`, userID, groupID)
-
-	if err != nil {
-		log.Println(err)
-		return errors.New("database error")
-	}
-
-	// update userCount in Group table
-	_, err = tx.Exec(`UPDATE "Group" SET userCount = userCount + 1 WHERE id = ?;`, groupID)
 
 	if err != nil {
 		tx.Rollback()
@@ -433,20 +434,11 @@ func JoinGroupFromInvite(userID string, groupID string) error {
 	}
 
 	// insert user into group
-	_, err = tx.Exec(`INSERT INTO "UserGroup" (userID, groupID) VALUES(?, ?);`, userID, groupID)
+	err = insertUserGroup(tx, userID, groupID)
 
 	if err != nil {
 		log.Println(err)
 		tx.Rollback()
-		return errors.New("database error")
-	}
-
-	// update userCount in Group table
-	_, err = tx.Exec(`UPDATE "Group" SET userCount = userCount + 1 WHERE id = ?;`, groupID)
-
-	if err != nil {
-		tx.Rollback()
-		log.Println(err)
 		return errors.New("database error")
 	}
 
@@ -500,16 +492,7 @@ func LeaveGroup(userID string, groupID string) error {
 		return errors.New("user not in group")
 	}
 
-	// delete from UserGroup where userID and groupID
-	_, err = tx.Exec(`DELETE FROM "UserGroup" WHERE userID = ? AND groupID = ?;`, userID, groupID)
-
-	if err != nil {
-		log.Println(err)
-		return errors.New("database error")
-	}
-
-	// update userCount in Group table
-	_, err = tx.Exec(`UPDATE "Group" SET userCount = userCount - 1 WHERE id = ?;`, groupID)
+	err = deleteUserGroup(tx, userID, groupID)
 
 	if err != nil {
 		tx.Rollback()
@@ -560,15 +543,7 @@ func RemoveUserFromGroup(ownerID string, userID string, groupID string) error {
 	}
 
 	// delete from UserGroup where userID and groupID
-	_, err = tx.Exec(`DELETE FROM "UserGroup" WHERE userID = ? AND groupID = ?;`, userID, groupID)
-
-	if err != nil {
-		log.Println(err)
-		return errors.New("database error")
-	}
-
-	// update userCount in Group table
-	_, err = tx.Exec(`UPDATE "Group" SET userCount = userCount - 1 WHERE id = ?;`, groupID)
+	err = deleteUserGroup(tx, userID, groupID)
 
 	if err != nil {
 		tx.Rollback()
@@ -617,5 +592,54 @@ func DeleteGroup(ownerID string, groupID string) error {
 		return errors.New("database error")
 	}
 
+	// delete redis usergroup set
+	db.RClient.Del(model.UserGroupKey + groupID)
+
 	return nil
+}
+
+func insertUserGroup(tx *sql.Tx, userID string, groupID string) error {
+
+	// insert id's into UserGroup table
+	_, err := tx.Exec(`INSERT INTO "UserGroup" (userID, groupID) SELECT ?, ?
+					WHERE NOT EXISTS(SELECT 1 FROM "UserGroup" WHERE userID = ? AND groupID = ?);`, userID, groupID, userID, groupID)
+
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	// update userCount in Group table
+	_, err = tx.Exec(`UPDATE "Group" SET userCount = userCount + 1 WHERE id = ?;`, groupID)
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	// add userID to redis set
+	err = db.RClient.SAdd(model.UserGroupKey+groupID, userID).Err()
+
+	return err
+}
+
+func deleteUserGroup(tx *sql.Tx, userID string, groupID string) error {
+	// delete from UserGroup where userID and groupID
+	_, err := tx.Exec(`DELETE FROM "UserGroup" WHERE userID = ? AND groupID = ?;`, userID, groupID)
+
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	// update userCount in Group table
+	_, err = tx.Exec(`UPDATE "Group" SET userCount = userCount - 1 WHERE id = ?;`, groupID)
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	// remove userID to redis set
+	err = db.RClient.SRem(model.UserGroupKey+groupID, userID).Err()
+
+	return err
 }
