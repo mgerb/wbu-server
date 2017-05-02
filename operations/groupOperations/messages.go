@@ -13,7 +13,6 @@ import (
 //StoreUserGroupMessages - store a users messages in a group
 func StoreUserGroupMessages(groupID string, userID string, message string) error {
 
-	//do validation before running redis script
 	//check message length - must be less than 150 characters
 	if len(message) > 150 || len(message) == 0 {
 		return errors.New("invalid message")
@@ -116,51 +115,75 @@ func GetUserGroupMessages(groupID string, userID string, unixTime string) ([]*mo
 	return messageList, nil
 }
 
-// TODO rethink this - need to get group name along with users name
 // fcmNotifications - get all fcm tokens and send notifications to FCM
 func fcmNotifications(groupID string, userID string, message string) {
 
-	userList, err := db.RClient.SMembers(model.UserGroupKey + groupID).Result()
+	// start SQL transaction
+	tx, err := db.SQL.Begin()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	defer tx.Commit()
+
+	// get users name
+	var firstName, lastName string
+	err = tx.QueryRow(`SELECT firstName, lastName from "User" WHERE id = ?;`, userID).Scan(&firstName, &lastName)
 
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
-	tokenList, err := db.RClient.HMGet(model.FCMTokenKey, userList...).Result()
+	rows, err := tx.Query(`SELECT us.fcmToken FROM "Group" AS g
+								INNER JOIN "UserGroup" AS ug ON g.id = ug.groupID
+								INNER JOIN "UserSettings" AS us ON ug.userID = us.userID
+								WHERE g.id = ? AND ug.userID != ? AND us.notifications = 1;`, groupID, userID)
 
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
-	var tokenStringList []string
-	for _, token := range tokenList {
-		tokenStringList = append(tokenStringList, token.(string))
+	defer rows.Close()
+
+	tokenList := []string{}
+
+	for rows.Next() {
+		var token string
+		err := rows.Scan(&token)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+
+		tokenList = append(tokenList, token)
 	}
 
 	data := map[string]interface{}{
-		"msg": "Test 123",
+		"groupID": groupID,
+		"type":    "message",
 	}
 
 	client := fcm.NewFcmClient(config.Config.FCMServerKey)
 
 	notifPayload := &fcm.NotificationPayload{
-		Title: "Group Name",
+		Title: firstName + " " + lastName,
 		Body:  message,
 		Sound: "Enabled",
 	}
 
 	client.SetNotificationPayload(notifPayload)
 
-	client.NewFcmRegIdsMsg(tokenStringList, data)
+	client.NewFcmRegIdsMsg(tokenList, data)
 
-	status, err := client.Send()
+	_, err = client.Send()
 
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
-	status.PrintResults()
+	//status.PrintResults()
 }

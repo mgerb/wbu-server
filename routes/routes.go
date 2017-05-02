@@ -19,6 +19,7 @@ func RegisterRoutes(app *echo.Echo) {
 	//user
 	app.GET("/user/refreshJWT", userRoutes.RefreshJWT)
 	app.GET("/user/searchUserByName/:name", userRoutes.SearchUserByName)
+	app.GET("/user/getUserSettings", userRoutes.GetUserSettings)
 
 	//groups
 	app.GET("/group/getUserGroups", groupRoutes.GetUserGroups)
@@ -30,6 +31,7 @@ func RegisterRoutes(app *echo.Echo) {
 	app.POST("/user/login", userRoutes.Login)
 	app.POST("/user/loginFacebook", userRoutes.LoginFacebook)
 	app.POST("/user/updateFCMToken", userRoutes.UpdateFCMToken)
+	app.POST("/user/toggleNotifications", userRoutes.ToggleNotifications)
 
 	//groups
 	app.POST("/group/createGroup", groupRoutes.CreateGroup)

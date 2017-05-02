@@ -5,9 +5,14 @@ import "database/sql"
 // redis keys
 const (
 	RateLimitKey = "rl:"
-	UserGroupKey = "ug:"
-	FCMTokenKey  = "fcmTokens"
 )
+
+// UserSettings - model
+type UserSettings struct {
+	UserID        string `json:"userID"`
+	Notifications bool   `json:"notifications"`
+	FcmToken      string `json:"-"`
+}
 
 // User - user model
 type User struct {

@@ -79,7 +79,7 @@ func InitializeDatabase() {
 			password text default null,
 			public integer not null default 0,
             
-			FOREIGN KEY (ownerID) REFERENCES "User" (userID)
+			FOREIGN KEY (ownerID) REFERENCES "User" (id)
 		);
 
 		create table if not exists "UserGroup" (
@@ -87,8 +87,8 @@ func InitializeDatabase() {
 			userID integer not null,
 			timestamp timestamp not null default CURRENT_TIMESTAMP,
             
-			FOREIGN KEY (userID) REFERENCES "User" (userID),
-			FOREIGN KEY (groupID) REFERENCES "Group" (groupID)
+			FOREIGN KEY (userID) REFERENCES "User" (id),
+			FOREIGN KEY (groupID) REFERENCES "Group" (id)
 		);
 			
 		create table if not exists "GroupInvite" (
@@ -96,8 +96,8 @@ func InitializeDatabase() {
 			userID integer not null,
 			timestamp timestamp default CURRENT_TIMESTAMP,
             
-			FOREIGN KEY (userID) REFERENCES "User" (userID),
-			FOREIGN KEY (groupID) REFERENCES "Group" (groupID)
+			FOREIGN KEY (userID) REFERENCES "User" (id),
+			FOREIGN KEY (groupID) REFERENCES "Group" (id)
 		);
 
 		create table if not exists "Message" (
@@ -107,7 +107,7 @@ func InitializeDatabase() {
 			content text not null,
 			timestamp timestamp not null default CURRENT_TIMESTAMP,
             
-			FOREIGN KEY (groupID) REFERENCES "Group" (groupID)
+			FOREIGN KEY (groupID) REFERENCES "Group" (id)
 		);
 
 		create table if not exists "GeoLocation" (
@@ -118,8 +118,16 @@ func InitializeDatabase() {
 			longitude real not null,
 			timestamp integer not null default CURRENT_TIMESTAMP,
 			
-			FOREIGN KEY (userID) REFERENCES "User" (userID),
-			FOREIGN KEY (groupID) REFERENCES "Group" (groupID)
+			FOREIGN KEY (userID) REFERENCES "User" (id),
+			FOREIGN KEY (groupID) REFERENCES "Group" (id)
+		);
+
+		create table if not exists "UserSettings" (
+			userID integer not null primary key,
+			fcmToken text default null,
+			notifications integer not null default 1,
+
+			FOREIGN KEY (userID) REFERENCES "User" (id)
 		);
 	`
 

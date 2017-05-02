@@ -153,3 +153,34 @@ func UpdateFCMToken(ctx echo.Context) error {
 		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
 	}
 }
+
+// ToggleNotifications -
+func ToggleNotifications(ctx echo.Context) error {
+	userID := ctx.Get("userID").(string)
+	toggle := ctx.FormValue("toggle")
+
+	err := userOperations.ToggleNotifications(userID, toggle)
+
+	switch err {
+	case nil:
+		return ctx.JSON(200, response.Json("notifications updated", response.SUCCESS))
+
+	default:
+		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
+	}
+}
+
+// GetUserSettings -
+func GetUserSettings(ctx echo.Context) error {
+	userID := ctx.Get("userID").(string)
+
+	settings, err := userOperations.GetUserSettings(userID)
+
+	switch err {
+	case nil:
+		return ctx.JSON(200, settings)
+
+	default:
+		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
+	}
+}

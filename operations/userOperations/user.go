@@ -66,12 +66,40 @@ func CreateUser(email string, password string, firstName string, lastName string
 		return errors.New("email taken")
 	}
 
-	// insert into User email, passwordHash, firstName, and lastName
-	_, err = tx.Exec(`INSERT INTO "User" (email, password, firstName, lastName) VALUES (?, ?, ?, ?);`, email, passwordHash, firstName, lastName)
+	err = insertUserInformation(tx, email, passwordHash, firstName, lastName, "")
 
 	if err != nil {
 		log.Println(err)
 		return errors.New("database error")
+	}
+
+	return nil
+}
+
+func insertUserInformation(tx *sql.Tx, email string, passwordHash string, firstName string, lastName string, facebookID string) error {
+
+	// if not facebook user
+	if facebookID != "" {
+		_, err := tx.Exec(`INSERT INTO "User" (email, firstName, lastName, facebookID) VALUES (?, ?, ?, ?);`, email, firstName, lastName, facebookID)
+
+		if err != nil {
+			return err
+		}
+
+	} else {
+		// insert into User email, passwordHash, firstName, and lastName
+		_, err := tx.Exec(`INSERT INTO "User" (email, password, firstName, lastName) VALUES (?, ?, ?, ?);`, email, passwordHash, firstName, lastName)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	// populate UserSettings table
+	_, err := tx.Exec(`INSERT INTO "UserSettings" (userID) VALUES((SELECT id FROM "User" WHERE email = ?));`, email)
+
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -128,7 +156,23 @@ func LoginFacebook(accessToken string) (*model.User, error) {
 
 	// store user info if not exists
 	if err == sql.ErrNoRows {
-		err := createFacebookUser(fbResponse)
+		// start sql transaction
+		tx, err := db.SQL.Begin()
+		if err != nil {
+			log.Println(err)
+			return &model.User{}, errors.New("database error")
+		}
+
+		// commit the transaction when the function returns
+		defer tx.Commit()
+
+		// get facebook user's information from token
+		email := fbResponse["email"].(string)
+		firstName := fbResponse["first_name"].(string)
+		lastName := fbResponse["last_name"].(string)
+		facebookID := fbResponse["id"].(string)
+
+		err = insertUserInformation(tx, email, "", firstName, lastName, facebookID)
 
 		if err != nil {
 			log.Println(err)
@@ -136,7 +180,7 @@ func LoginFacebook(accessToken string) (*model.User, error) {
 		}
 
 		// get user information
-		err = db.SQL.QueryRow(`SELECT id, email, firstName, lastName, facebookID FROM "User" WHERE "facebookID" = ?;`, facebookID).Scan(&newUser.ID, &newUser.Email, &newUser.FirstName, &newUser.LastName, &newUser.FacebookID.String)
+		err = tx.QueryRow(`SELECT id, email, firstName, lastName, facebookID FROM "User" WHERE "facebookID" = ?;`, facebookID).Scan(&newUser.ID, &newUser.Email, &newUser.FirstName, &newUser.LastName, &newUser.FacebookID.String)
 
 		if err != nil {
 			log.Println(err)
@@ -148,6 +192,7 @@ func LoginFacebook(accessToken string) (*model.User, error) {
 		return &model.User{}, errors.New("database error")
 	}
 
+	// generate new json web token
 	token, lastRefreshTime, errToken := tokens.GetJWT(newUser.Email, strconv.FormatInt(newUser.ID, 10), newUser.FirstName, newUser.LastName)
 
 	if errToken != nil {
@@ -160,22 +205,6 @@ func LoginFacebook(accessToken string) (*model.User, error) {
 	newUser.FacebookUser = true
 
 	return newUser, nil
-}
-
-func createFacebookUser(fbResponse map[string]interface{}) error {
-	// get facebook user's information from token
-	email := fbResponse["email"].(string)
-	firstName := fbResponse["first_name"].(string)
-	lastName := fbResponse["last_name"].(string)
-	facebookID := fbResponse["id"].(string)
-
-	_, err := db.SQL.Exec(`INSERT INTO "User" (email, firstName, lastName, facebookID) VALUES (?, ?, ?, ?);`, email, firstName, lastName, facebookID)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // SearchUserByName - return list of users that match name
@@ -222,7 +251,7 @@ func UpdateFCMToken(userID string, token string) error {
 		return errors.New("invalid token")
 	}
 
-	err := db.RClient.HSet(model.FCMTokenKey, userID, token).Err()
+	_, err := db.SQL.Exec(`UPDATE "UserSettings" SET fcmToken = ? WHERE userID = ?;`, token, userID)
 
 	if err != nil {
 		log.Println(err)
@@ -230,6 +259,38 @@ func UpdateFCMToken(userID string, token string) error {
 	}
 
 	return nil
+}
+
+// ToggleNotifications - Update fcm token in user table
+func ToggleNotifications(userID string, toggle string) error {
+
+	if toggle != "1" && toggle != "0" {
+		return errors.New("invalid value")
+	}
+
+	_, err := db.SQL.Exec(`UPDATE "UserSettings" SET notifications = ? WHERE userID = ?;`, toggle, userID)
+
+	if err != nil {
+		log.Println(err)
+		return errors.New("database error")
+	}
+
+	return nil
+}
+
+// GetUserSettings - get user settings
+func GetUserSettings(userID string) (*model.UserSettings, error) {
+
+	settings := &model.UserSettings{}
+
+	err := db.SQL.QueryRow(`SELECT userID, notifications FROM "UserSettings" WHERE userID = ?;`, userID).Scan(&settings.UserID, &settings.Notifications)
+
+	if err != nil {
+		log.Println(err)
+		return &model.UserSettings{}, err
+	}
+
+	return settings, nil
 }
 
 // DeleteUser -

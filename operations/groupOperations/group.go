@@ -592,9 +592,6 @@ func DeleteGroup(ownerID string, groupID string) error {
 		return errors.New("database error")
 	}
 
-	// delete redis usergroup set
-	db.RClient.Del(model.UserGroupKey + groupID)
-
 	return nil
 }
 
@@ -616,9 +613,6 @@ func insertUserGroup(tx *sql.Tx, userID string, groupID string) error {
 		log.Println(err)
 	}
 
-	// add userID to redis set
-	err = db.RClient.SAdd(model.UserGroupKey+groupID, userID).Err()
-
 	return err
 }
 
@@ -637,9 +631,6 @@ func deleteUserGroup(tx *sql.Tx, userID string, groupID string) error {
 	if err != nil {
 		log.Println(err)
 	}
-
-	// remove userID to redis set
-	err = db.RClient.SRem(model.UserGroupKey+groupID, userID).Err()
 
 	return err
 }
