@@ -4,10 +4,9 @@ import (
 	"errors"
 	"log"
 
-	fcm "github.com/NaySoftware/go-fcm"
-	"github.com/mgerb/wbu-server/config"
 	"github.com/mgerb/wbu-server/db"
 	"github.com/mgerb/wbu-server/model"
+	"github.com/mgerb/wbu-server/utils/fcm"
 )
 
 //StoreUserGroupMessages - store a users messages in a group
@@ -50,7 +49,8 @@ func StoreUserGroupMessages(groupID string, userID string, message string) error
 	tx.Commit()
 
 	// send out notifications via FCM - new go routine
-	go fcmNotifications(groupID, userID, message)
+	//go fcmNotifications(groupID, userID, message)
+	go fcm.SendToGroup(groupID, userID, message, "message")
 
 	return nil
 }
@@ -113,77 +113,4 @@ func GetUserGroupMessages(groupID string, userID string, unixTime string) ([]*mo
 	}
 
 	return messageList, nil
-}
-
-// fcmNotifications - get all fcm tokens and send notifications to FCM
-func fcmNotifications(groupID string, userID string, message string) {
-
-	// start SQL transaction
-	tx, err := db.SQL.Begin()
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	defer tx.Commit()
-
-	// get users name
-	var firstName, lastName string
-	err = tx.QueryRow(`SELECT firstName, lastName from "User" WHERE id = ?;`, userID).Scan(&firstName, &lastName)
-
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	rows, err := tx.Query(`SELECT us.fcmToken FROM "Group" AS g
-								INNER JOIN "UserGroup" AS ug ON g.id = ug.groupID
-								INNER JOIN "UserSettings" AS us ON ug.userID = us.userID
-								WHERE g.id = ? AND ug.userID != ? AND us.notifications = 1;`, groupID, userID)
-
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	defer rows.Close()
-
-	tokenList := []string{}
-
-	for rows.Next() {
-		var token string
-		err := rows.Scan(&token)
-		if err != nil {
-			log.Println(err)
-			continue
-		}
-
-		tokenList = append(tokenList, token)
-	}
-
-	data := map[string]interface{}{
-		"groupID": groupID,
-		"type":    "message",
-	}
-
-	client := fcm.NewFcmClient(config.Config.FCMServerKey)
-
-	notifPayload := &fcm.NotificationPayload{
-		Title: firstName + " " + lastName,
-		Body:  message,
-		Sound: "Enabled",
-	}
-
-	client.SetNotificationPayload(notifPayload)
-
-	client.NewFcmRegIdsMsg(tokenList, data)
-
-	_, err = client.Send()
-
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	//status.PrintResults()
 }

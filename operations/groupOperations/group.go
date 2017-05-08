@@ -9,6 +9,7 @@ import (
 	"github.com/mgerb/wbu-server/db"
 	"github.com/mgerb/wbu-server/model"
 	"github.com/mgerb/wbu-server/utils"
+	"github.com/mgerb/wbu-server/utils/fcm"
 	"github.com/mgerb/wbu-server/utils/regex"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -364,6 +365,7 @@ func InviteUserToGroup(ownerID string, userID string, groupID string) error {
 	}
 
 	// FCM Notifications
+	go fcm.UserInviteNotif(userID)
 
 	return nil
 }
