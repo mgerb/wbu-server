@@ -26,12 +26,14 @@ type configStruct struct {
 	FCMServerKey string `json:"FCMServerKey"`
 }
 
+// Init -
 func Init() {
-	readConfigFile()
+	ReadConfigFile()
 	parseFlags()
 }
 
-func readConfigFile() {
+// ReadConfigFile - reads config.json
+func ReadConfigFile() {
 
 	log.Println("Reading config file...")
 
