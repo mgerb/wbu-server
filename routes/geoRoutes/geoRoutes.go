@@ -12,8 +12,9 @@ func StoreGeoLocation(ctx echo.Context) error {
 	groupID := ctx.FormValue("groupID")
 	latitude := ctx.FormValue("latitude")
 	longitude := ctx.FormValue("longitude")
+	waypoint := ctx.FormValue("waypoint") == "true"
 
-	err := geoOperations.StoreGeoLocation(userID, groupID, latitude, longitude)
+	err := geoOperations.StoreGeoLocation(userID, groupID, latitude, longitude, waypoint)
 
 	switch err {
 	case nil:

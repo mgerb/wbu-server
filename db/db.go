@@ -117,6 +117,7 @@ func InitializeDatabase() {
 			latitude real not null,
 			longitude real not null,
 			timestamp integer not null default CURRENT_TIMESTAMP,
+			waypoint integer not null default 0,
 			
 			FOREIGN KEY (userID) REFERENCES "User" (id),
 			FOREIGN KEY (groupID) REFERENCES "Group" (id)

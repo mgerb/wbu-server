@@ -10,7 +10,7 @@ import (
 )
 
 // StoreGeoLocation -
-func StoreGeoLocation(userID string, groupID string, latitude string, longitude string) error {
+func StoreGeoLocation(userID string, groupID string, latitude string, longitude string, waypoint bool) error {
 
 	// convert coordinates for validation
 	long, err1 := strconv.ParseFloat(longitude, 64)
@@ -50,9 +50,9 @@ func StoreGeoLocation(userID string, groupID string, latitude string, longitude 
 	}
 
 	// insert/update user location
-	_, err = tx.Exec(`UPDATE "GeoLocation" SET latitude = ?, longitude = ?, timestamp = CURRENT_TIMESTAMP WHERE userID = ? AND groupID = ?;
-					INSERT INTO "GeoLocation" (userID, groupID, latitude, longitude) SELECT ?, ?, ?, ? WHERE changes() = 0;`,
-		latitude, longitude, userID, groupID, userID, groupID, latitude, longitude)
+	_, err = tx.Exec(`UPDATE "GeoLocation" SET latitude = ?, longitude = ?, timestamp = CURRENT_TIMESTAMP, waypoint = ? WHERE userID = ? AND groupID = ?;
+					INSERT INTO "GeoLocation" (userID, groupID, latitude, longitude, waypoint) SELECT ?, ?, ?, ?, ? WHERE changes() = 0;`,
+		latitude, longitude, waypoint, userID, groupID, userID, groupID, latitude, longitude, waypoint)
 
 	if err != nil {
 		log.Println(err)
@@ -88,7 +88,7 @@ func GetGeoLocations(userID string, groupID string) ([]*model.GeoLocation, error
 	}
 
 	// get GeoLocation
-	rows, err := tx.Query(`SELECT u.id, u.firstName, u.lastName, u.email, gl.groupID, gl.latitude, gl.longitude, gl.timestamp
+	rows, err := tx.Query(`SELECT u.id, u.firstName, u.lastName, u.email, gl.groupID, gl.latitude, gl.longitude, strftime('%s', gl.timestamp), gl.waypoint
 							FROM "GeoLocation" AS gl INNER JOIN "User" AS u ON gl.userID = u.id
 							WHERE gl.groupID = ?;`, groupID)
 
@@ -103,7 +103,8 @@ func GetGeoLocations(userID string, groupID string) ([]*model.GeoLocation, error
 
 	for rows.Next() {
 		newGeo := &model.GeoLocation{}
-		err := rows.Scan(&newGeo.ID, &newGeo.FirstName, &newGeo.LastName, &newGeo.Email, &newGeo.GroupID, &newGeo.Latitude, &newGeo.Longitude, &newGeo.Timestamp)
+		err := rows.Scan(&newGeo.ID, &newGeo.FirstName, &newGeo.LastName, &newGeo.Email,
+			&newGeo.GroupID, &newGeo.Latitude, &newGeo.Longitude, &newGeo.Timestamp, &newGeo.Waypoint)
 
 		if err != nil {
 			log.Println(err)
