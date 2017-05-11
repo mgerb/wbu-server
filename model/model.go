@@ -63,5 +63,5 @@ type GeoLocation struct {
 	Latitude  string `json:"latitude,omitempty"`
 	Longitude string `json:"longitude,omitempty"`
 	Timestamp int64  `json:"timestamp,omitempty"`
-	Waypoint  bool   `json:"waypoint,omitempty"`
+	Waypoint  bool   `json:"waypoint"`
 }
