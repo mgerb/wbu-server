@@ -7,7 +7,10 @@ import (
 
 	"github.com/mgerb/wbu-server/db"
 	"github.com/mgerb/wbu-server/model"
+	"github.com/mgerb/wbu-server/utils/fcm"
 )
+
+const fcmType = "geoLocation"
 
 // StoreGeoLocation -
 func StoreGeoLocation(userID string, groupID string, latitude string, longitude string, waypoint bool) error {
@@ -58,6 +61,15 @@ func StoreGeoLocation(userID string, groupID string, latitude string, longitude 
 		log.Println(err)
 		return errors.New("database error")
 	}
+
+	var message string
+	if waypoint {
+		message = "Set a waypoint."
+	} else {
+		message = "Shared their location."
+	}
+
+	go fcm.SendToGroup(groupID, userID, message, fcmType)
 
 	return nil
 }

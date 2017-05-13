@@ -1,7 +1,6 @@
 package fcm
 
 import (
-	"fmt"
 	"log"
 
 	fcm "github.com/NaySoftware/go-fcm"
@@ -94,8 +93,6 @@ func UserInviteNotif(userID string) {
 }
 
 func sendNotif(title string, body string, data *data, tokenList []string) error {
-
-	fmt.Println("Sending notifications")
 
 	client := fcm.NewFcmClient(config.Config.FCMServerKey)
 
