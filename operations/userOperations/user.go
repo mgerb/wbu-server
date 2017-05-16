@@ -22,33 +22,33 @@ func CreateUser(email string, password string, firstName string, lastName string
 
 	//validate password
 	if !regexp.MustCompile(regex.PASSWORD).MatchString(password) {
-		return errors.New("invalid password")
+		return errors.New("Password must be at least 5 characters.")
 	}
 
 	passwordHash, err := utils.GenerateHash(password)
 
 	if err != nil {
 		log.Println(err)
-		return errors.New("password hash error")
+		return errors.New("Internal error.")
 	}
 
 	//validate email
 	if !regexp.MustCompile(regex.EMAIL).MatchString(email) {
-		return errors.New("invalid email")
+		return errors.New("Invalid email.")
 	}
 
 	nameLength := len(firstName + lastName)
 
 	// validate first/last name
-	if nameLength < 2 || nameLength > 40 {
-		return errors.New("invalid name")
+	if nameLength < 1 || nameLength > 40 {
+		return errors.New("Invalid name.")
 	}
 
 	// start sql transaction
 	tx, err := db.SQL.Begin()
 	if err != nil {
 		log.Println(err)
-		return errors.New("database error")
+		return errors.New("Internal error.")
 	}
 
 	// commit the transaction when the function returns
@@ -61,16 +61,16 @@ func CreateUser(email string, password string, firstName string, lastName string
 	// return err or if email already exists
 	if err != nil {
 		log.Println(err)
-		return errors.New("database error")
+		return errors.New("Internal error.")
 	} else if userExists {
-		return errors.New("email taken")
+		return errors.New("Email is taken.")
 	}
 
 	err = insertUserInformation(tx, email, passwordHash, firstName, lastName, "")
 
 	if err != nil {
 		log.Println(err)
-		return errors.New("database error")
+		return errors.New("Internal error.")
 	}
 
 	return nil
@@ -116,18 +116,18 @@ func Login(email string, password string) (*model.User, error) {
 
 	if err != nil {
 		log.Println(err)
-		return newUser, errors.New("invalid user")
+		return newUser, errors.New("Invalid login.")
 	}
 
 	if bcrypt.CompareHashAndPassword([]byte(newUser.Password), []byte(password)) != nil {
-		return &model.User{}, errors.New("invalid password")
+		return &model.User{}, errors.New("Invalid login.")
 	}
 
 	token, lastRefreshTime, errToken := tokens.GetJWT(newUser.Email, strconv.FormatInt(newUser.ID, 10), newUser.FirstName, newUser.LastName)
 
 	if errToken != nil {
 		log.Println(err)
-		return &model.User{}, errors.New("jwt error")
+		return &model.User{}, errors.New("Internal error.")
 	}
 
 	newUser.Jwt = token
@@ -142,7 +142,7 @@ func LoginFacebook(accessToken string) (*model.User, error) {
 	// check if valid facebook user
 	fbResponse, err := fb.Me(accessToken)
 	if err != nil {
-		return &model.User{}, errors.New("facebook error")
+		return &model.User{}, errors.New("Internal error.")
 	}
 
 	// get the facebook user id
@@ -160,7 +160,7 @@ func LoginFacebook(accessToken string) (*model.User, error) {
 		tx, err := db.SQL.Begin()
 		if err != nil {
 			log.Println(err)
-			return &model.User{}, errors.New("database error")
+			return &model.User{}, errors.New("Internal error.")
 		}
 
 		// commit the transaction when the function returns
@@ -176,7 +176,7 @@ func LoginFacebook(accessToken string) (*model.User, error) {
 
 		if err != nil {
 			log.Println(err)
-			return &model.User{}, errors.New("database error")
+			return &model.User{}, errors.New("Internal error.")
 		}
 
 		// get user information
@@ -184,12 +184,12 @@ func LoginFacebook(accessToken string) (*model.User, error) {
 
 		if err != nil {
 			log.Println(err)
-			return &model.User{}, errors.New("database error")
+			return &model.User{}, errors.New("Internal error.")
 		}
 
 	} else if err != nil {
 		log.Println(err)
-		return &model.User{}, errors.New("database error")
+		return &model.User{}, errors.New("Internal error.")
 	}
 
 	// generate new json web token
@@ -197,7 +197,7 @@ func LoginFacebook(accessToken string) (*model.User, error) {
 
 	if errToken != nil {
 		log.Println(err)
-		return &model.User{}, errors.New("jwt error")
+		return &model.User{}, errors.New("Internal error.")
 	}
 
 	newUser.Jwt = token
@@ -208,16 +208,16 @@ func LoginFacebook(accessToken string) (*model.User, error) {
 }
 
 // SearchUserByName - return list of users that match name
-func SearchUserByName(name string, userID string) ([]*model.User, error) {
+func SearchUserByName(searchTerm string, userID string) ([]*model.User, error) {
 
 	userList := []*model.User{}
 
 	// get user information
-	rows, err := db.SQL.Query(`SELECT id, email, firstName, lastName FROM "User" WHERE "firstName" || ' ' || "lastName" LIKE ? AND "id" != ? LIMIT 20;`, "%"+name+"%", userID)
+	rows, err := db.SQL.Query(`SELECT id, email, firstName, lastName FROM "User" WHERE "firstName" || ' ' || "lastName" LIKE ? OR "email" LIKE ? AND "id" != ? LIMIT 20;`, "%"+searchTerm+"%", "%"+searchTerm+"%", userID)
 
 	if err != nil {
 		log.Println(err)
-		return []*model.User{}, errors.New("database error")
+		return []*model.User{}, errors.New("Internal error.")
 	}
 
 	defer rows.Close()
@@ -229,7 +229,7 @@ func SearchUserByName(name string, userID string) ([]*model.User, error) {
 
 		if err != nil {
 			log.Println(err)
-			return []*model.User{}, errors.New("database error")
+			return []*model.User{}, errors.New("Internal error.")
 		}
 		userList = append(userList, newUser)
 	}
@@ -238,7 +238,7 @@ func SearchUserByName(name string, userID string) ([]*model.User, error) {
 
 	if err != nil {
 		log.Println(err)
-		return []*model.User{}, errors.New("row error")
+		return []*model.User{}, errors.New("Internal error.")
 	}
 
 	return userList, nil

@@ -620,19 +620,15 @@ func insertUserGroup(tx *sql.Tx, userID string, groupID string) error {
 
 func deleteUserGroup(tx *sql.Tx, userID string, groupID string) error {
 	// delete from UserGroup where userID and groupID
-	_, err := tx.Exec(`DELETE FROM "UserGroup" WHERE userID = ? AND groupID = ?;`, userID, groupID)
+	_, err := tx.Exec(`DELETE FROM "UserGroup" WHERE userID = ? AND groupID = ?;
+						DELETE FROM "GeoLocation" WHERE userID = ? AND groupID = ?;`, userID, groupID, userID, groupID)
 
 	if err != nil {
-		log.Println(err)
 		return err
 	}
 
 	// update userCount in Group table
 	_, err = tx.Exec(`UPDATE "Group" SET userCount = userCount - 1 WHERE id = ?;`, groupID)
-
-	if err != nil {
-		log.Println(err)
-	}
 
 	return err
 }
