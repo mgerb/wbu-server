@@ -96,15 +96,15 @@ func CreateGroup(name string, userID string, password string, public bool) error
 }
 
 // SearchPublicGroups - matches group by group name
-func SearchPublicGroups(name string) ([]*model.Group, error) {
+func SearchPublicGroups(searchTerm string) ([]*model.Group, error) {
 	groupList := []*model.Group{}
 
 	// query groups - join with UserGroup and User tables to get the group owner information
 	rows, err := db.SQL.Query(`
 		SELECT g.id, g.name, u.email, g.userCount, g.password, u.firstName, u.lastName
 		FROM "Group" AS g INNER JOIN "USER" AS u ON g.ownerID = u.id
-		WHERE g.public = 1 AND g.name LIKE ? LIMIT 20;`,
-		"%"+name+"%")
+		WHERE g.public = 1 AND (g.name LIKE ? OR u.email LIKE ?) LIMIT 20;`,
+		"%"+searchTerm+"%", "%"+searchTerm+"%")
 
 	if err != nil {
 		log.Println(err)
