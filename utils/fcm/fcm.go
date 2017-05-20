@@ -36,7 +36,7 @@ func SendToGroup(groupID string, senderUserID string, message string, notifType 
 	rows, err := tx.Query(`SELECT us.fcmToken FROM "Group" AS g
 								INNER JOIN "UserGroup" AS ug ON g.id = ug.groupID
 								INNER JOIN "UserSettings" AS us ON ug.userID = us.userID
-								WHERE g.id = ? AND ug.userID != ? AND us.notifications = 1;`, groupID, senderUserID)
+								WHERE us.fcmToken IS NOT NULL AND g.id = ? AND ug.userID != ? AND us.notifications = 1;`, groupID, senderUserID)
 	if err != nil {
 		log.Println(err)
 		return
@@ -76,7 +76,7 @@ func SendToGroup(groupID string, senderUserID string, message string, notifType 
 // UserInviteNotif -
 func UserInviteNotif(userID string) {
 	var fcmToken string
-	err := db.SQL.QueryRow(`SELECT fcmToken FROM "UserSettings" WHERE userID = ? AND notifications == 1;`, userID).Scan(&fcmToken)
+	err := db.SQL.QueryRow(`SELECT fcmToken FROM "UserSettings" WHERE fcmToken IS NOT NULL AND userID = ? AND notifications == 1;`, userID).Scan(&fcmToken)
 
 	if err != nil {
 		log.Println(err)

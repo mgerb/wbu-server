@@ -130,6 +130,14 @@ func InitializeDatabase() {
 
 			FOREIGN KEY (userID) REFERENCES "User" (id)
 		);
+
+		create table if not exists "UserFeedback" (
+			id integer not null primary key autoincrement,
+			userID integer not null,
+			feedback text not null,
+
+			FOREIGN KEY (userID) REFERENCES "User" (id)
+		);
 	`
 
 	_, err := SQL.Exec(sqlStatement)

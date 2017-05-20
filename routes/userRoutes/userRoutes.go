@@ -184,3 +184,34 @@ func GetUserSettings(ctx echo.Context) error {
 		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
 	}
 }
+
+// RemoveFCMToken-
+func RemoveFCMToken(ctx echo.Context) error {
+	token := ctx.FormValue("token")
+
+	err := userOperations.RemoveFCMToken(token)
+
+	switch err {
+	case nil:
+		return ctx.JSON(200, response.Json("Token removed.", response.SUCCESS))
+
+	default:
+		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
+	}
+}
+
+// StoreUserFeedback -
+func StoreUserFeedback(ctx echo.Context) error {
+	userID := ctx.Get("userID").(string)
+	feedback := ctx.FormValue("feedback")
+
+	err := userOperations.StoreUserFeedback(userID, feedback)
+
+	switch err {
+	case nil:
+		return ctx.JSON(200, response.Json("Feedback stored.", response.SUCCESS))
+
+	default:
+		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
+	}
+}

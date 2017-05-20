@@ -32,6 +32,8 @@ func RegisterRoutes(app *echo.Echo) {
 	app.POST("/user/loginFacebook", userRoutes.LoginFacebook)
 	app.POST("/user/updateFCMToken", userRoutes.UpdateFCMToken)
 	app.POST("/user/toggleNotifications", userRoutes.ToggleNotifications)
+	app.POST("/user/removeFCMToken", userRoutes.RemoveFCMToken)
+	app.POST("/user/storeUserFeedback", userRoutes.StoreUserFeedback)
 
 	//groups
 	app.POST("/group/createGroup", groupRoutes.CreateGroup)

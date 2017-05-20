@@ -33,6 +33,8 @@ func main() {
 	// load scripts into memory
 	changeScripts := loadScripts()
 
+	fmt.Println("Running change scripts...")
+
 	// loop through scripts
 	for _, script := range changeScripts {
 		fmt.Println(script)

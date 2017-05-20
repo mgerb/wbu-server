@@ -304,3 +304,33 @@ func DeleteUser(userID string) error {
 
 	return nil
 }
+
+// RemoveFCMToken -
+func RemoveFCMToken(token string) error {
+
+	_, err := db.SQL.Exec(`DELETE FROM "UserSettings" WHERE fcmToken = `, token)
+
+	if err != nil {
+		log.Println(err)
+		return errors.New("Database error.")
+	}
+
+	return nil
+}
+
+// StoreUserFeedback -
+func StoreUserFeedback(userID string, feedback string) error {
+
+	if feedback == "" {
+		return errors.New("Invalid feedback.")
+	}
+
+	_, err := db.SQL.Exec(`INSERT INTO "UserFeedback"(userID, feedback) VALUES(?,?);`, userID, feedback)
+
+	if err != nil {
+		log.Println(err)
+		return errors.New("Database error.")
+	}
+
+	return nil
+}

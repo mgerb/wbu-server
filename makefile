@@ -7,11 +7,11 @@ mac-build:
 dev:
 	reflex -s go run main.go
 
-dbDeploy:
+dbUpdate:
 	go run ./changescripts/script.go
 
-deploy:
-	go build ./main.go && ./main -p
+deploy: dbUpdate
+	go build && ./wbu-server -p
 
 generate-tls:
 	sudo openssl req -x509 -nodes -days 365 -newkey rsa:4096 -keyout ./key.pem -out ./cert.pem
