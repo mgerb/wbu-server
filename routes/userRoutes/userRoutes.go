@@ -185,11 +185,11 @@ func GetUserSettings(ctx echo.Context) error {
 	}
 }
 
-// RemoveFCMToken-
+// RemoveFCMToken -
 func RemoveFCMToken(ctx echo.Context) error {
-	token := ctx.FormValue("token")
+	userID := ctx.Get("userID").(string)
 
-	err := userOperations.RemoveFCMToken(token)
+	err := userOperations.RemoveFCMToken(userID)
 
 	switch err {
 	case nil:

@@ -306,9 +306,9 @@ func DeleteUser(userID string) error {
 }
 
 // RemoveFCMToken -
-func RemoveFCMToken(token string) error {
+func RemoveFCMToken(userID string) error {
 
-	_, err := db.SQL.Exec(`DELETE FROM "UserSettings" WHERE fcmToken = `, token)
+	_, err := db.SQL.Exec(`UPDATE "UserSettings" SET fcmToken = NULL WHERE userID = ?;`, userID)
 
 	if err != nil {
 		log.Println(err)
