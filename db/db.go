@@ -2,11 +2,14 @@ package db
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 
 	redis "github.com/go-redis/redis"
+	// database driver
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/mgerb/wbu-server/db/lua"
+	"github.com/mgerb/wbu-server/db/tasks"
 )
 
 // SQL - sqlite database connection
@@ -28,6 +31,7 @@ func StartSQL(databaseName string) {
 
 	InitializeDatabase()
 
+	tasks.StartBackgroundTasks(SQL)
 }
 
 // StartRedis -
@@ -44,9 +48,9 @@ func StartRedis(address string, password string) {
 	test := RClient.Ping()
 
 	if test.Val() == "PONG" {
-		log.Println("Redis connected...")
+		fmt.Println("Redis connected...")
 	} else {
-		log.Println("Redis connection failed...")
+		fmt.Println("Redis connection failed...")
 	}
 
 	// Load lua scripts into memory
@@ -56,7 +60,7 @@ func StartRedis(address string, password string) {
 // InitializeDatabase - initial database scripts
 func InitializeDatabase() {
 
-	log.Println("sqlite startup scripts...")
+	fmt.Println("sqlite startup scripts...")
 
 	sqlStatement := `
 		

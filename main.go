@@ -19,6 +19,7 @@ func main() {
 	db.StartSQL(config.Config.DatabaseName)
 	db.StartRedis(config.Config.RedisAddress, "")
 	defer db.SQL.Close()
+	defer db.RClient.Close()
 
 	app := echo.New()
 	app.Server.WriteTimeout = time.Second * 10
