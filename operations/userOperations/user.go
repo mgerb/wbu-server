@@ -166,8 +166,14 @@ func LoginFacebook(accessToken string) (*model.User, error) {
 		// commit the transaction when the function returns
 		defer tx.Commit()
 
+		var email string
 		// get facebook user's information from token
-		email := fbResponse["email"].(string)
+		if val, ok := fbResponse["email"].(string); ok {
+			email = val
+		} else {
+			email = ""
+		}
+
 		firstName := fbResponse["first_name"].(string)
 		lastName := fbResponse["last_name"].(string)
 		facebookID := fbResponse["id"].(string)
