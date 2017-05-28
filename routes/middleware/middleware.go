@@ -19,6 +19,7 @@ import (
 func ApplyMiddleware(app *echo.Echo) {
 	app.Use(rateLimit)
 	app.Use(checkJWT)
+	app.Use(middleware.Gzip())
 
 	if !config.Flags.Production {
 		app.Use(middleware.Logger())
