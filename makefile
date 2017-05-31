@@ -10,9 +10,11 @@ dev:
 dbUpdate:
 	go run ./changescripts/script.go
 
-deploy: dbUpdate
-	go build && ./wbu-server -p
-
 generate-tls:
 	sudo openssl req -x509 -nodes -days 365 -newkey rsa:4096 -keyout ./key.pem -out ./cert.pem
 
+install:
+	godep get
+
+deploy: install dbUpdate 
+	go build && ./wbu-server -p
