@@ -56,7 +56,7 @@ func CreateUser(email string, password string, firstName string, lastName string
 
 	//check if the email already exists
 	var userExists bool
-	err = tx.QueryRow(`SELECT EXISTS(SELECT 1 FROM "User" WHERE "email" = ?);`, email).Scan(&userExists)
+	err = tx.QueryRow(`SELECT EXISTS(SELECT 1 FROM "User" WHERE "email" = lower(?));`, email).Scan(&userExists)
 
 	// return err or if email already exists
 	if err != nil {
@@ -80,7 +80,7 @@ func insertUserInformation(tx *sql.Tx, email string, passwordHash string, firstN
 
 	// if not facebook user
 	if facebookID != "" {
-		_, err := tx.Exec(`INSERT INTO "User" (email, firstName, lastName, facebookID) VALUES (?, ?, ?, ?);`, email, firstName, lastName, facebookID)
+		_, err := tx.Exec(`INSERT INTO "User" (email, firstName, lastName, facebookID) VALUES (lower(?), ?, ?, ?);`, email, firstName, lastName, facebookID)
 
 		if err != nil {
 			return err
@@ -88,7 +88,7 @@ func insertUserInformation(tx *sql.Tx, email string, passwordHash string, firstN
 
 	} else {
 		// insert into User email, passwordHash, firstName, and lastName
-		_, err := tx.Exec(`INSERT INTO "User" (email, password, firstName, lastName) VALUES (?, ?, ?, ?);`, email, passwordHash, firstName, lastName)
+		_, err := tx.Exec(`INSERT INTO "User" (email, password, firstName, lastName) VALUES (lower(?), ?, ?, ?);`, email, passwordHash, firstName, lastName)
 
 		if err != nil {
 			return err
@@ -96,7 +96,7 @@ func insertUserInformation(tx *sql.Tx, email string, passwordHash string, firstN
 	}
 
 	// populate UserSettings table
-	_, err := tx.Exec(`INSERT INTO "UserSettings" (userID) VALUES((SELECT id FROM "User" WHERE email = ?));`, email)
+	_, err := tx.Exec(`INSERT INTO "UserSettings" (userID) VALUES((SELECT id FROM "User" WHERE email = lower(?)));`, email)
 
 	if err != nil {
 		return err
@@ -112,7 +112,7 @@ func Login(email string, password string) (*model.User, error) {
 	newUser := &model.User{}
 
 	// get user information
-	err := db.SQL.QueryRow(`SELECT id, email, firstName, lastName, password FROM "User" WHERE "email" = ?;`, email).Scan(&newUser.ID, &newUser.Email, &newUser.FirstName, &newUser.LastName, &newUser.Password)
+	err := db.SQL.QueryRow(`SELECT id, email, firstName, lastName, password FROM "User" WHERE "email" = lower(?);`, email).Scan(&newUser.ID, &newUser.Email, &newUser.FirstName, &newUser.LastName, &newUser.Password)
 
 	if err != nil {
 		log.Println(err)
@@ -219,7 +219,7 @@ func SearchUserByName(searchTerm string, userID string) ([]*model.User, error) {
 	userList := []*model.User{}
 
 	// get user information
-	rows, err := db.SQL.Query(`SELECT id, email, firstName, lastName FROM "User" WHERE "firstName" || ' ' || "lastName" LIKE ? OR "email" LIKE ? AND "id" != ? LIMIT 20;`, "%"+searchTerm+"%", "%"+searchTerm+"%", userID)
+	rows, err := db.SQL.Query(`SELECT id, email, firstName, lastName FROM "User" WHERE "firstName" || ' ' || "lastName" LIKE ? OR "email" LIKE lower(?) AND "id" != ? LIMIT 20;`, "%"+searchTerm+"%", "%"+searchTerm+"%", userID)
 
 	if err != nil {
 		log.Println(err)
