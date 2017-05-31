@@ -103,7 +103,7 @@ func SearchPublicGroups(searchTerm string) ([]*model.Group, error) {
 	rows, err := db.SQL.Query(`
 		SELECT g.id, g.name, u.email, g.userCount, g.password, u.firstName, u.lastName
 		FROM "Group" AS g INNER JOIN "USER" AS u ON g.ownerID = u.id
-		WHERE g.public = 1 AND (g.name LIKE ? OR u.email LIKE ?) LIMIT 20;`,
+		WHERE g.public = 1 AND (g.name LIKE ? OR u.email LIKE lower(?)) LIMIT 20;`,
 		"%"+searchTerm+"%", "%"+searchTerm+"%")
 
 	if err != nil {
