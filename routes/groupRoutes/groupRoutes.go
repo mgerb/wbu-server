@@ -219,3 +219,20 @@ func GetMessages(ctx echo.Context) error {
 		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
 	}
 }
+
+//UpdateGroupInfo -
+func UpdateGroupInfo(ctx echo.Context) error {
+	userID := ctx.Get("userID").(string)
+	groupID := ctx.FormValue("groupID")
+	password := ctx.FormValue("password")
+	public := ctx.FormValue("public") == "true"
+
+	err := groupOperations.UpdateGroupInfo(userID, groupID, password, public)
+
+	switch err {
+	case nil:
+		return ctx.JSON(200, response.Json("Info updated.", response.SUCCESS))
+	default:
+		return ctx.JSON(500, response.Json(err.Error(), response.INTERNAL_ERROR))
+	}
+}

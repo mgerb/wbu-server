@@ -48,10 +48,6 @@ func CreateGroup(name string, userID string, password string, public bool) error
 	if public {
 		// if users sets a password for the group
 		if password != "" {
-			// validate password
-			if len(password) < 5 {
-				return errors.New("password must be more than 5 characters")
-			}
 
 			// hash the password before storing in the database
 			passwordHash, err := utils.GenerateHash(password)
@@ -631,4 +627,58 @@ func deleteUserGroup(tx *sql.Tx, userID string, groupID string) error {
 	_, err = tx.Exec(`UPDATE "Group" SET userCount = userCount - 1 WHERE id = ?;`, groupID)
 
 	return err
+}
+
+// UpdateGroupInfo - update group to public/private and update password
+func UpdateGroupInfo(ownerID string, groupID string, password string, public bool) error {
+
+	// start db transaction
+	tx, err := db.SQL.Begin()
+	if err != nil {
+		log.Println(err)
+		return errors.New("database error")
+	}
+
+	defer tx.Commit()
+
+	// check if user is group owner
+	// check if user exists in group
+	var validOwner bool
+	err = tx.QueryRow(`SELECT EXISTS(SELECT 1 FROM "Group" WHERE id = ? AND ownerID = ?);`,
+		groupID, ownerID).Scan(&validOwner)
+
+	if err != nil {
+		log.Println(err)
+		return errors.New("database error")
+	}
+
+	// if user is owner
+	if !validOwner {
+		return errors.New("Invalid group owner.")
+	}
+
+	// check if the password is updated
+	if password != "" {
+
+		// hash the password before storing in the database
+		passwordHash, err := utils.GenerateHash(password)
+
+		if err != nil {
+			log.Println(err)
+			return errors.New("Error hashing password")
+		}
+
+		_, err = tx.Exec(`UPDATE "Group" SET "public" = ?, "password" = ? WHERE "id" = ?;`, public, passwordHash, groupID)
+	} else {
+
+		// set password to null if password is blank
+		_, err = tx.Exec(`UPDATE "Group" SET "public" = ?, "password" = NULL WHERE "id" = ?;`, public, groupID)
+	}
+
+	if err != nil {
+		log.Println(err)
+		return errors.New("database error")
+	}
+
+	return nil
 }

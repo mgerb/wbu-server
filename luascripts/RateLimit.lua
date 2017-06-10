@@ -1,6 +1,5 @@
 -- key takes in <key>:<ip address>
 local key = KEYS[1]
-local requestsPerMinute = ARGV[1]
 
 local rateCount = redis.call("INCR", key)
 
