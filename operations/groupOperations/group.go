@@ -144,7 +144,7 @@ func GetUserGroups(userID string) ([]*model.Group, error) {
 
 	// get group list - join Group on UserGroup and User
 	rows, err := db.SQL.Query(`
-		SELECT g.id, g.name, g.ownerID, g.userCount, g.password , g.public FROM "Group" AS g
+		SELECT g.id, g.name, g.ownerID, u.firstName, u.lastName, u.email, g.userCount, g.password , g.public FROM "Group" AS g
 		INNER JOIN "UserGroup" AS ug ON g.id = ug.groupID
 		INNER JOIN "User" AS u ON ug.userID = u.id
 		WHERE u.id = ?;`, userID)
@@ -159,7 +159,9 @@ func GetUserGroups(userID string) ([]*model.Group, error) {
 	// map query to group object list
 	for rows.Next() {
 		newGroup := &model.Group{}
-		err := rows.Scan(&newGroup.ID, &newGroup.Name, &newGroup.OwnerID, &newGroup.UserCount, &newGroup.Password, &newGroup.Public)
+		var firstName, lastName string
+		err := rows.Scan(&newGroup.ID, &newGroup.Name, &newGroup.OwnerID, &firstName, &lastName, &newGroup.OwnerEmail, &newGroup.UserCount, &newGroup.Password, &newGroup.Public)
+		newGroup.OwnerName = firstName + " " + lastName
 
 		// group is locked if password is not null
 		newGroup.Locked = newGroup.Password.Valid
@@ -267,12 +269,12 @@ func JoinPublicGroup(userID string, groupID string, password string) error {
 	}
 
 	if !newGroup.Public {
-		return errors.New("group not public")
+		return errors.New("Not a public group.")
 	}
 
 	// if group has a password - check if passwords match
 	if newGroup.Password.Valid && bcrypt.CompareHashAndPassword([]byte(newGroup.Password.String), []byte(password)) != nil {
-		return errors.New("invalid password")
+		return errors.New("Invalid password.")
 	}
 
 	var userExistsInGroup bool
@@ -282,7 +284,7 @@ func JoinPublicGroup(userID string, groupID string, password string) error {
 		log.Println(err)
 		return errors.New("database error")
 	} else if userExistsInGroup {
-		return errors.New("user already in group")
+		return errors.New("Already in group.")
 	}
 
 	// insert id's into UserGroup table
