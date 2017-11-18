@@ -1,4 +1,9 @@
-# WBU Server written in go
+# Where Bar You Server
+
+This is the back end for an app I worked on to learn React Native app development.
+It is no longer being maintained.
+
+[Check out a blog post I did here.](https://mitchellgerber.com/post/Projects/2017-11-18-my-first-app)
 
 ## flags
 
